@@ -2,8 +2,8 @@
 <h2>Step 1. Specify a source page address (URL)</h2>
 
 <p>
-  This step retrieves the HTML source from a given (URL) and is required for
-  step 2.
+  This step retrieves the HTML source from a given link (URL) and is required
+  for step 2.
 </p>
 
 <h2>Step 2. Define extraction rules</h2>
@@ -141,5 +141,44 @@ Pattern correct is crucial!
   <span class="inline-code">&#123;%3&#125;</span>. The assigned items are
   numbered in the order they are matched in the pattern, and the numbering is
   used for step 3.
+</p>
+
+<h2>Step 3. Define output format</h2>
+
+<h3>RSS feed properties</h3>
+
+<p>
+  <strong>Feed Title:</strong> The title that will display in an RSS reader.
+</p>
+
+<p>
+  <strong>Feed Link:</strong> Provide the link (URL) to the website the feed is
+  being created for.
+</p>
+
+<p>
+  <strong>Feed Description:</strong> The description that will display in an RSS
+  reader.
+</p>
+
+<h3>RSS item properties</h3>
+
+<p>
+  <strong>Item Title Template:</strong> Provide the corresponding value from the
+  feed preview in step 2 (e.g. <span class="inline-code">&#123;%1&#125;</span>)
+  to assign as the Title for each item in the pattern.
+</p>
+
+<p>
+  <strong>Item Link Template:</strong> Provide the corresponding value from the
+  feed preview in step 2 (e.g. <span class="inline-code">&#123;%2&#125;</span>)
+  to assign as the Link (URL) for each item in the pattern.
+</p>
+
+<p>
+  <strong>Item Content Template:</strong> Provide the corresponding value from
+  the feed preview in step 2 (e.g.
+  <span class="inline-code">&#123;%3&#125;</span>) to assign as the Content for
+  each item in the pattern.
 </p>
 {% endblock %}
