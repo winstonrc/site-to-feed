@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 @app.route('/')
-def step_1():
+def index():
     return render_template('index.html')
 
 
@@ -28,7 +28,7 @@ def documentation():
 
 
 @app.route('/get_html', methods=['GET'])
-def step_2():
+def step_1():
     url = request.args.get('url')
     logger.debug(f"/get_html: {url=}")
 
@@ -53,7 +53,7 @@ def step_2():
 
 
 @app.route('/extract_html', methods=['POST'])
-def step_3():
+def step_2():
     global_search_pattern = request.form.get('global-search-pattern')
     if not global_search_pattern:
         return f'<p>Error: A string is required for Global Search Pattern.</p>'
@@ -126,6 +126,35 @@ def step_3():
         f"{global_search_pattern=}\n{item_search_pattern=}\n{extracted_html=}"
     )
     return render_template('extract_html.html', extracted_html=extracted_html, html_source=html_source)
+
+
+@app.route('/format_feed_output', methods=['POST'])
+def step_3():
+    feed_title = request.form.get('feed-title')
+    if not feed_title:
+        return f'<p>Error: A string is required for Feed Title.</p>'
+
+    feed_link = request.form.get('feed-link')
+    if not feed_link:
+        return f'<p>Error: A string is required for Feed Link.</p>'
+
+    item_title_template = request.form.get('item-title-template')
+    if not item_title_template:
+        return f'<p>Error: A string is required for Item Title Template.</p>'
+
+    item_link_template = request.form.get('item-link-template')
+    if not item_link_template:
+        return f'<p>Error: A string is required for Item Link Template.</p>'
+
+    item_content_template = request.form.get('item-content-template')
+    if not item_content_template:
+        return f'<p>Error: A string is required for Item Content Template.</p>'
+
+    extracted_html = request.form.get('extracted-html')
+    if not extracted_html:
+        return f'<p>Error: Extracted HTML from step 2 is required.</p>'
+
+    return render_template('format_feed_output.html', extracted_html=extracted_html)
 
 
 if __name__ == '__main__':

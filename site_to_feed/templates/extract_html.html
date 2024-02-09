@@ -6,5 +6,55 @@
 
 <div id="step-3">
   <h2>Step 3. Define output format</h2>
+
+  <h3>RSS feed properties</h3>
+
+  <form
+    id="output-format"
+    action="/format_feed_output"
+    method="post"
+    autocomplete="off"
+  >
+    <label for="feed-title">Feed Title:</label>
+    <input type="text" id="feed-title" name="feed-title" required />
+
+    <label for="feed-link">Feed Link:</label>
+    <input type="url" id="feed-link" name="feed-link" required />
+
+    <h3>RSS item properties</h3>
+
+    <label for="item-title-template">Item Title Template:</label>
+    <input
+      type="text"
+      id="item-title-template"
+      name="item-title-template"
+      required
+    />
+
+    <label for="item-link-template">Item Link Template:</label>
+    <input
+      type="text"
+      id="item-link-template"
+      name="item-link-template"
+      required
+    />
+
+    <label for="item-content-template">Item Content Template:</label>
+    <input
+      type="text"
+      id="item-content-template"
+      name="item-content-template"
+      required
+    /><br />
+
+    <input
+      type="hidden"
+      name="extracted-html"
+      value="{{ extracted_html }}"
+      required
+    />
+    <button type="submit">Preview</button>
+  </form>
+  <br />
 </div>
 {% endblock %}

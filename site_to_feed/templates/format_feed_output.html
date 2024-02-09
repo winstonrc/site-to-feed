@@ -1,0 +1,16 @@
+{% extends 'extract_html.html' %} {% block content %} {{ super() }}
+<details open>
+  <summary>Feed preview:</summary>
+  <pre><code id="html-extraction">{{ extracted_html }}</code></pre>
+</details>
+
+<div id="step-4">
+  <h2>Step 4. Get your RSS feed</h2>
+
+  <p>
+    <strong>Feed URL:</strong>
+    <br /><br />
+    <strong>Edit URL:</strong>
+  </p>
+</div>
+{% endblock %}

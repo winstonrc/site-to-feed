@@ -16,13 +16,6 @@
     autocomplete="off"
   >
     <label for="global-search-pattern">Global Search Pattern:</label>
-    <input
-      type="text"
-      id="global-search-pattern"
-      name="global-search-pattern"
-      value="&#123;&#37;&#125;"
-      required
-    />
     <details>
       <summary>Instructions</summary>
       <p>
@@ -36,14 +29,16 @@
         to select the entire HTML source.
       </p>
     </details>
-    <br />
-    <label for="item-search-pattern">Item Search Pattern:</label><br />
-    <textarea
-      id="item-search-pattern"
-      name="item-search-pattern"
-      rows="4"
+    <input
+      type="text"
+      id="global-search-pattern"
+      name="global-search-pattern"
+      value="&#123;&#37;&#125;"
       required
-    ></textarea>
+    />
+    <br /><br />
+
+    <label for="item-search-pattern">Item Search Pattern:</label><br />
     <details>
       <summary>Instructions</summary>
       <p>
@@ -60,6 +55,14 @@
         wrap the elements you want to retrieve.
       </p>
     </details>
+
+    <textarea
+      id="item-search-pattern"
+      name="item-search-pattern"
+      rows="4"
+      required
+    ></textarea>
+
     <input
       type="hidden"
       name="html-source"
@@ -68,7 +71,6 @@
     />
     <button type="submit">Extract</button>
   </form>
-
-  <p id="extracted-html"></p>
+  <br />
 </div>
 {% endblock %}
