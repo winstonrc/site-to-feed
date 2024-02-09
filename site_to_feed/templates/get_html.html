@@ -1,4 +1,4 @@
-{% extends 'step_1.html' %} {% block content %} {{ super() }}
+{% extends 'index.html' %} {% block content %} {{ super() }}
 <details open>
   <summary>
     HTML source retrieved from: <a href="{{ url }}">{{ url }}</a>
@@ -65,7 +65,7 @@
       name="html-source"
       value="{{ html_source }}"
       required
-    /><br />
+    />
     <button type="submit">Extract</button>
   </form>
 

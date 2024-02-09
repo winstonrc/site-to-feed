@@ -1,6 +1,10 @@
-{% extends 'step_2.html' %} {% block content %} {{ super() }}
+{% extends 'get_html.html' %} {% block content %} {{ super() }}
 <details open>
   <summary>Extracted data:</summary>
   <pre><code id="html-extraction">{{ extracted_html }}</code></pre>
 </details>
+
+<div id="step-3">
+  <h2>Step 3. Define output format</h2>
+</div>
 {% endblock %}

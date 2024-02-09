@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 @app.route('/')
 def step_1():
-    return render_template('step_1.html')
+    return render_template('index.html')
 
 
 @app.route('/documentation')
@@ -43,7 +43,7 @@ def step_2():
 
         cleaned_html = nh3.clean(html=html_source)
 
-        return render_template('step_2.html', url=url, html_source=cleaned_html)
+        return render_template('get_html.html', url=url, html_source=cleaned_html)
     except requests.exceptions.ConnectionError as error:
         logger.error(f"{error=}")
         return f'<p>Error: Invalid URL</p>'
@@ -62,15 +62,18 @@ def step_3():
     if not item_search_pattern:
         return f'<p>Error: A string is required for Item Search Pattern.</p>'
 
-    # todo: fix retrieving this from page
     html_source = request.form.get('html-source')
     if not html_source:
         return f'<p>Error: HTML source from step 1 is required.</p>'
+
+    translation_table = str.maketrans("", "", '{}*%"=<>/')
 
     if global_search_pattern == "{%}":
         elements = BeautifulSoup(html_source, 'html.parser')
     else:
         elements = BeautifulSoup(html_source, 'html.parser')
+        global_search_pattern = global_search_pattern.translate(
+            translation_table)
         elements = elements.find(global_search_pattern)
 
     search_parameters = [str(line)
@@ -78,7 +81,7 @@ def step_3():
     logger.debug(f"{search_parameters=}")
 
     # Pop and format the first line, which is used for the initial filtering
-    initial_parameter = search_parameters.pop(0).strip('{*}').strip('<>')
+    initial_parameter = search_parameters.pop(0).translate(translation_table)
 
     elements = elements.find_all(initial_parameter)
     logger.debug(f"{len(elements)=}\n{elements=}")
@@ -90,15 +93,21 @@ def step_3():
 
         for i, param in enumerate(search_parameters, start=1):
             param = re.sub(r'</[a-zA-Z]+>', '', param)
-
-            translation_table = str.maketrans("", "", '{}*%"=<>/')
             param = param.translate(translation_table)
 
             match param:
+                case 'a':
+                    value = element.get_text(strip=True)
                 case 'href':
-                    value = element.find('a').get('href')
+                    if element.get(param):
+                        value = element.get(param)
+                    else:
+                        value = element.find('a').get(param)
                 case 'title':
-                    value = element.find('a').get('title')
+                    if element.get(param):
+                        value = element.get(param)
+                    else:
+                        value = element.find('a').get(param)
                 case 'p':
                     value = element.get_text(strip=True)
                 case _:
@@ -116,7 +125,7 @@ def step_3():
     logger.debug(
         f"{global_search_pattern=}\n{item_search_pattern=}\n{extracted_html=}"
     )
-    return render_template('step_3.html', extracted_html=extracted_html)
+    return render_template('extract_html.html', extracted_html=extracted_html, html_source=html_source)
 
 
 if __name__ == '__main__':
