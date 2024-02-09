@@ -99,6 +99,19 @@
 >&#123;%&#125;
 </code></pre>
 
+<p>This uses the entire HTML document.</p>
+
+<p>Or it could be:</p>
+
+<pre><code
+>&lt;article&gt;
+</code></pre>
+
+<p>
+  This would look for the first
+  <span class="inline-code">&lt;article&gt;</span> in the HTML document.
+</p>
+
 <p>The Item Search Pattern could be:</p>
 
 <pre><code
@@ -107,6 +120,18 @@ title="&#123;%&#125;"&#123;*&#125;
 href="&#123;%&#125;"&#123;*&#125;
 &lt;p&gt;&#123;%&#125;&lt;/p&gt;
 </code></pre>
+
+<p>Or it could be:</p>
+
+<pre><code
+>&lt;article&gt;&#123;*&#125;
+&lt;a&gt;&#123;*&#125;
+href="&#123;%&#125;"&#123;*&#125;
+&lt;p&gt;&#123;%&#125;&lt;/p&gt;
+</code></pre>
+
+Every website implements its HTML a bit differently, so getting the Item Search
+Pattern correct is crucial!
 
 <p>
   This pattern would look for HTML elements in the
