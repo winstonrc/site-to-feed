@@ -1,11 +1,9 @@
 import logging
-from os import error
 import nh3
-import re
 import requests
 
 from bs4 import BeautifulSoup
-from flask import Flask, render_template, request, session
+from flask import Flask, render_template, request
 
 
 app = Flask(__name__)
@@ -69,7 +67,7 @@ def step_2():
 
     translation_table = str.maketrans("", "", '{}*%"=<>/')
 
-    elements = BeautifulSoup(html_source, 'html.parser', from_encoding='utf-8')
+    elements = BeautifulSoup(html_source, 'html.parser')
     if global_search_pattern != "{%}":
         global_search_pattern = global_search_pattern.translate(
             translation_table)
@@ -136,6 +134,10 @@ def step_3():
     if not feed_link:
         return f'<p>Error: A string is required for Feed Link.</p>'
 
+    feed_description = request.form.get('feed-description')
+    if not feed_description:
+        return f'<p>Error: A string is required for Feed Description.</p>'
+
     item_title_template = request.form.get('item-title-template')
     if not item_title_template:
         return f'<p>Error: A string is required for Item Title Template.</p>'
@@ -152,7 +154,10 @@ def step_3():
     if not extracted_html:
         return f'<p>Error: Extracted HTML from step 2 is required.</p>'
 
-    return render_template('format_feed_output.html', extracted_html=extracted_html)
+    # todo: implement
+    feed_preview = extracted_html
+
+    return render_template('format_feed_output.html', feed_title=feed_title, feed_link=feed_link, feed_description=feed_description, feed_preview=feed_preview)
 
 
 if __name__ == '__main__':
