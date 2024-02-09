@@ -54,14 +54,9 @@ def step_1():
 
 @app.route('/extract_html', methods=['POST'])
 def step_2():
-    global_search_pattern = request.form.get('global-search-pattern')
-    if not global_search_pattern:
-        return f'<p>Error: A string is required for Global Search Pattern.</p>'
-
-    item_search_pattern = request.form.get('item-search-pattern')
-    if not item_search_pattern:
-        return f'<p>Error: A string is required for Item Search Pattern.</p>'
-
+    ####################
+    # Inherited values #
+    ####################
     url = request.form.get('url')
     if not url:
         return f'<p>Error: URL from step 1 is required.</p>'
@@ -69,6 +64,17 @@ def step_2():
     html_source = request.form.get('html-source')
     if not html_source:
         return f'<p>Error: HTML source from step 1 is required.</p>'
+
+    ##############
+    # New values #
+    ##############
+    global_search_pattern = request.form.get('global-search-pattern')
+    if not global_search_pattern:
+        return f'<p>Error: A string is required for Global Search Pattern.</p>'
+
+    item_search_pattern = request.form.get('item-search-pattern')
+    if not item_search_pattern:
+        return f'<p>Error: A string is required for Item Search Pattern.</p>'
 
     translation_table = str.maketrans("", "", '{}*%"=<>/')
 
@@ -131,6 +137,28 @@ def step_2():
 
 @app.route('/format_feed_output', methods=['POST'])
 def step_3():
+    ####################
+    # Inherited values #
+    ####################
+    url = request.form.get('url')
+    if not url:
+        return f'<p>Error: URL from step 1 is required.</p>'
+
+    html_source = request.form.get('html-source')
+    if not html_source:
+        return f'<p>Error: HTML from step 1 is required.</p>'
+
+    extracted_html = request.form.get('extracted-html')
+    if not extracted_html:
+        return f'<p>Error: Extracted HTML from step 2 is required.</p>'
+
+    # Convert extracted_html from a str back into a dict to pass onto the next
+    # template and keep the data persisted in the block above.
+    extracted_html = ast.literal_eval(extracted_html)
+
+    ##############
+    # New values #
+    ##############
     feed_title = request.form.get('feed-title')
     if not feed_title:
         return f'<p>Error: A string is required for Feed Title.</p>'
@@ -154,22 +182,6 @@ def step_3():
     item_content_template = request.form.get('item-content-template')
     if not item_content_template:
         return f'<p>Error: A string is required for Item Content Template.</p>'
-
-    url = request.form.get('url')
-    if not url:
-        return f'<p>Error: URL from step 1 is required.</p>'
-
-    html_source = request.form.get('html-source')
-    if not html_source:
-        return f'<p>Error: HTML from step 1 is required.</p>'
-
-    extracted_html = request.form.get('extracted-html')
-    if not extracted_html:
-        return f'<p>Error: Extracted HTML from step 2 is required.</p>'
-
-    # Convert extracted_html from a str back into a dict to pass onto the next
-    # template and keep the data persisted in the block above.
-    extracted_html = ast.literal_eval(extracted_html)
 
     # todo: implement
     feed_preview = extracted_html
