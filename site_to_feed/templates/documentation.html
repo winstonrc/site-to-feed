@@ -42,7 +42,7 @@
 
 <p>
   The goal of this search pattern is to retrieve the <em>title</em>,
-  <em>hyperlink</em> &#40;URL&#41;, and <em>content</em>.
+  <em>link</em> &#40;URL&#41;, and <em>content</em>.
 </p>
 
 <p>Patterns generally contain the following elements:</p>
@@ -59,7 +59,7 @@
   </li>
   <li>
     <span class="inline-code">&#123;%&#125;</span> – Defines the element to
-    assign the title, hyperlink, or content to
+    assign the title, link, or content to
   </li>
   <li>
     <span class="inline-code">&#123;*&#125;</span> – Indicates that the HTML
@@ -70,8 +70,8 @@
 
 <p>
   A properly formatted pattern should have three instances of
-  <span class="inline-code">&#123;%&#125;</span> for declaring the title,
-  hyperlink, and content. It should also have three instances of
+  <span class="inline-code">&#123;%&#125;</span> for declaring the title, link,
+  and content. It should also have three instances of
   <span class="inline-code">&#123;*&#125;</span> for declaring which parts of
   the HTML to ignore between the initial opening tag
   <span class="inline-code">&lt;&gt;</span> and the final closing
@@ -136,7 +136,7 @@ Pattern correct is crucial!
 <p>
   This pattern would look for HTML elements in the
   <span class="inline-code">&lt;article&gt;</span> element and assign the title
-  to <span class="inline-code">&#123;%1&#125;</span>, the hyperlink to
+  to <span class="inline-code">&#123;%1&#125;</span>, the link to
   <span class="inline-code">&#123;%2&#125;</span>, and the content to
   <span class="inline-code">&#123;%3&#125;</span>. The assigned items are
   numbered in the order they are matched in the pattern, and the numbering is
