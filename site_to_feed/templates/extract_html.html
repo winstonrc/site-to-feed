@@ -1,12 +1,13 @@
 {% extends 'get_html.html' %} {% block content %} {{ super() }}
 <details open>
   <summary>Feed preview:</summary>
-  <pre><code id="html-extraction"
-  >{% for key, values in extracted_html.items() %}Item {{ key }}
-&#123;%1&#125; = {{ values[0] }}
-&#123;%2&#125; = {{ values[1] }}
-&#123;%3&#125; = {{ values[2] }}
-{% if not loop.last %}{{ '\n' }}{% endif %}{% endfor %}</code></pre>
+  <div id="html-extraction" class="scrollable">
+    {% for key, values in extracted_html.items() %} Item {{ key }}<br />
+    &#123;%1&#125; = {{ values[0] }}<br />
+    &#123;%2&#125; = {{ values[1] }}<br />
+    &#123;%3&#125; = {{ values[2] }}<br />
+    {% if not loop.last %}<br />{% endif %}{% endfor %}
+  </div>
 </details>
 
 <div id="step-3">
@@ -54,6 +55,15 @@
       name="item-content-template"
       required
     /><br />
+
+    <input type="hidden" name="url" value="{{ url }}" required />
+
+    <input
+      type="hidden"
+      name="html-source"
+      value="{{ html_source }}"
+      required
+    />
 
     <input
       type="hidden"

@@ -1,7 +1,25 @@
 {% extends 'extract_html.html' %} {% block content %} {{ super() }}
 <details open>
   <summary>Feed preview:</summary>
-  <pre><code id="html-extraction">{{ extracted_html }}</code></pre>
+
+  <div id="feed-output-preview" class="scrollable">
+    <h3>{{ feed_title }}</h3>
+    <p>
+      <a href="{{ feed_link }}">{{ feed_link }}</a><br />
+      {{ feed_description }}
+    </p>
+
+    <ol id="feed-preview">
+      {% for key, values in feed_preview.items() %}
+      <li>
+        <hr />
+        <strong>{{ values[0] }}</strong><br />
+        <a href="{{ values[1] }}">{{ values[1] }}</a><br />
+        {{ values[2] }}<br />
+      </li>
+      {% endfor %}
+    </ol>
+  </div>
 </details>
 
 <div id="step-4">
@@ -9,7 +27,9 @@
 
   <p>
     <strong>Feed URL:</strong>
-    <br /><br />
+  </p>
+
+  <p>
     <strong>Edit URL:</strong>
   </p>
 </div>

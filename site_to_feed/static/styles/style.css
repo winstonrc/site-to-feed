@@ -78,3 +78,9 @@ textarea {
   font-family: monospace;
   background: var(--code-background-color);
 }
+
+.scrollable {
+  height: 30em;
+  overflow-y: auto;
+  background: #f6f8fa;
+}
