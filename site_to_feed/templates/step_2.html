@@ -1,0 +1,74 @@
+{% extends 'step_1.html' %} {% block content %} {{ super() }}
+<details open>
+  <summary>
+    HTML source retrieved from: <a href="{{ url }}">{{ url }}</a>
+  </summary>
+  <pre><code id="html-source">{{ html_source }}</code></pre>
+</details>
+
+<div id="step-2">
+  <h2>Step 2. Define extraction rules</h2>
+
+  <form
+    id="extraction-rules"
+    action="/extract_html"
+    method="post"
+    autocomplete="off"
+  >
+    <label for="global-search-pattern">Global Search Pattern:</label>
+    <input
+      type="text"
+      id="global-search-pattern"
+      name="global-search-pattern"
+      value="&#123;&#37;&#125;"
+      required
+    />
+    <details>
+      <summary>Instructions</summary>
+      <p>
+        Define which part of the HTML source to apply the extraction pattern
+        to.<br />
+        This is handy if there's an HTML pattern that matches the Item Search
+        Pattern below that you do not want to be included.<br />
+        <br />
+        <strong>Tip:</strong> Enter
+        <span class="inline-code">&#123;&#37;&#125;</span>
+        to select the entire HTML source.
+      </p>
+    </details>
+    <br />
+    <label for="item-search-pattern">Item Search Pattern:</label><br />
+    <textarea
+      id="item-search-pattern"
+      name="item-search-pattern"
+      rows="4"
+      required
+    ></textarea>
+    <details>
+      <summary>Instructions</summary>
+      <p>
+        Define the HTML pattern to match that will form the individual listings
+        in the Feed.<br />
+        Use
+        <span class="inline-code">&#123;%&#125;</span> and
+        <span class="inline-code">&#123;*&#125;</span> for marking up the HTML
+        pattern.<br />
+        This pattern is applied to the HTML selected in the Global Search
+        Pattern above.<br />
+        <br />
+        <strong>Tip:</strong> Look for repeated patterns in the HTML tags that
+        wrap the elements you want to retrieve.
+      </p>
+    </details>
+    <input
+      type="hidden"
+      name="html-source"
+      value="{{ html_source }}"
+      required
+    /><br />
+    <button type="submit">Extract</button>
+  </form>
+
+  <p id="extracted-html"></p>
+</div>
+{% endblock %}

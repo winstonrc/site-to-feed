@@ -1,0 +1,80 @@
+:root {
+  --code-background-color: #f6f8fa;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  height: 100%;
+  width: 100%;
+  margin: auto;
+  font-family: Verdana, sans-serif;
+  font-style: normal;
+  font-size: 1em;
+}
+
+main {
+  max-width: 45em;
+  margin: auto;
+  margin-top: 2em;
+  padding-left: 1.2em;
+  padding-right: 1.2em;
+  padding-bottom: 3em;
+  line-height: 1.5;
+  text-align: left;
+}
+
+code {
+  display: block;
+  background: var(--code-background-color);
+  padding: 6px;
+  border-radius: 6px;
+  overflow: auto;
+  max-height: 45em;
+}
+
+input {
+  width: 100%;
+}
+
+nav {
+  position: relative;
+  z-index: 2;
+  height: 1.75em;
+  overflow-y: hidden;
+  scroll-behavior: smooth;
+}
+
+nav ul {
+  display: flex;
+  flex-wrap: nowrap;
+  padding-bottom: 1.5em;
+  padding-left: 0;
+  margin-block: 0;
+  overflow-x: auto;
+  list-style: none;
+  text-align: center;
+  white-space: nowrap;
+}
+
+nav ul a {
+  display: block;
+  text-decoration: none;
+  margin-right: 1em;
+}
+
+textarea {
+  width: 100%;
+}
+
+.inline-code {
+  font-family: monospace;
+  background: var(--code-background-color);
+}

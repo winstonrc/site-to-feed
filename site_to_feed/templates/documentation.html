@@ -1,0 +1,120 @@
+{% extends 'layout.html' %} {% block content %}
+<h2>Step 1. Specify a source page address (URL)</h2>
+
+<p>
+  This step retrieves the HTML source from a given (URL) and is required for
+  step 2.
+</p>
+
+<h2>Step 2. Define extraction rules</h2>
+
+<p>
+  This step defines the pattern to extract from the HTML retrieved in step 1.
+</p>
+
+<p>
+  A general understanding of
+  <a
+    href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Getting_started#anatomy_of_an_html_element"
+    >HTML elements</a
+  >
+  and the
+  <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/a"
+    ><span class="inline-code">&lt;/a&gt;</span> &#40;anchor element&#41;</a
+  >
+  is recommended.
+</p>
+
+<h3>Global Search Pattern</h3>
+
+<p>
+  The goal of this search pattern is to define which part of the HTML document
+  you want to parse.
+</p>
+
+<p>
+  It's generally recommended to use
+  <span class="inline-code">&#123;%&#125;</span>
+  to select the entire HTML source.
+</p>
+
+<h3>Item Search Pattern</h3>
+
+<p>
+  The goal of this search pattern is to retrieve the <em>title</em>,
+  <em>hyperlink</em> &#40;URL&#41;, and <em>content</em>.
+</p>
+
+<p>Patterns generally contain the following elements:</p>
+
+<ul>
+  <li>
+    <span class="inline-code">&lt;&gt;</span> – The opening tag of an HTML
+    element
+  </li>
+  <li>
+    <span class="inline-code">&lt;/&gt;</span> – The closing tag of an HTML
+    element that matches the opening tag with an additional
+    <span class="inline-code">/</span> before the element name
+  </li>
+  <li>
+    <span class="inline-code">&#123;%&#125;</span> – Defines the element to
+    assign the title, hyperlink, or content to
+  </li>
+  <li>
+    <span class="inline-code">&#123;*&#125;</span> – Indicates that the HTML
+    between the previous element and the next element can be ignored by the
+    pattern
+  </li>
+</ul>
+
+<p>
+  A properly formatted pattern should have three instances of
+  <span class="inline-code">&#123;%&#125;</span> for declaring the title,
+  hyperlink, and content. It should also have three instances of
+  <span class="inline-code">&#123;*&#125;</span> for declaring which parts of
+  the HTML to ignore between the initial opening tag
+  <span class="inline-code">&lt;&gt;</span> and the final closing
+  <span class="inline-code">&lt;/&gt;</span> tag.
+</p>
+
+<h3>Example</h3>
+
+<p>Suppose a blog has multiple posts in the following format:</p>
+
+<pre><code
+>&lt;article&gt;
+  &lt;a title="Post 1" href="https://www.example.com/blog/Post_1"&gt;
+    Post 1
+  &lt;/a&gt;
+  &lt;p&gt;
+    Content of the blog post.
+  &lt;/p&gt;
+&lt;/article&gt;
+</code></pre>
+
+<p>The Global Search Pattern could be:</p>
+
+<pre><code
+>&#123;%&#125;
+</code></pre>
+
+<p>The Item Search Pattern could be:</p>
+
+<pre><code
+>&lt;article&gt;&#123;*&#125;
+title="&#123;%&#125;"&#123;*&#125;
+href="&#123;%&#125;"&#123;*&#125;
+&lt;p&gt;&#123;%&#125;&lt;/p&gt;
+</code></pre>
+
+<p>
+  This pattern would look for HTML elements in the
+  <span class="inline-code">&lt;article&gt;</span> element and assign the title
+  to <span class="inline-code">&#123;%1&#125;</span>, the hyperlink to
+  <span class="inline-code">&#123;%2&#125;</span>, and the content to
+  <span class="inline-code">&#123;%3&#125;</span>. The assigned items are
+  numbered in the order they are matched in the pattern, and the numbering is
+  used for step 3.
+</p>
+{% endblock %}

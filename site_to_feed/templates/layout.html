@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Site to RSS feed</title>
+    <link rel="stylesheet" type="text/css" href="static/styles/style.css" />
+  </head>
+  <body hx-boost="true">
+    <main>
+      <header>
+        <h1>Site to RSS feed</h1>
+        <nav>
+          <ul>
+            <li><a href="/">home</a></li>
+            <li><a href="/documentation">documentation</a></li>
+          </ul>
+        </nav>
+      </header>
+      {% block content %}{% endblock %}
+    </main>
+  </body>
+</html>

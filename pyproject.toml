@@ -1,0 +1,33 @@
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "site-to-feed"
+version = "0.1.0"
+description = ""
+authors = ["Winston Cooke <git@winstoncooke.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+flask = "^3.0.2"
+requests = "^2.31.0"
+nh3 = "^0.2.15"
+beautifulsoup4 = "^4.12.3"
+
+[tool.pyright]
+venvPath = "."
+venv = "venv"
+include = ["site_to_feed"]
+exclude = ["**/node_modules",
+    "**/__pycache__"
+]
+defineConstant = { DEBUG = true }
+stubPath = "src/stubs"
+
+reportMissingImports = true
+reportMissingTypeStubs = false
+
+pythonVersion = "3.11"
+pythonPlatform = "Linux"
