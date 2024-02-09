@@ -1,6 +1,7 @@
 import ast
 import logging
 import nh3
+import re
 import requests
 
 from bs4 import BeautifulSoup
@@ -100,6 +101,9 @@ def step_2():
 
         transformed_element = []
         for param in search_parameters:
+            # Remove matching closing tag
+            param = re.sub(r'</[a-zA-Z]+>', '', param)
+            # Retrieve element or attribute name
             param = param.translate(translation_table)
 
             try:
