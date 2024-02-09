@@ -152,25 +152,6 @@ def step_3():
     if not extracted_html:
         return f'<p>Error: Extracted HTML from step 2 is required.</p>'
 
-    # elements = []
-    # for element in extracted_html:
-    #     soup = BeautifulSoup(element, 'html.parser')
-    #
-    #     # Extract values for {%1}, {%2}, and {%3}
-    #     title = soup.find('div', text=lambda t: '{%1}' in t).text.split(
-    #         '=')[-1].strip()
-    #     link = soup.find('div', text=lambda t: '{%2}' in t).text.split(
-    #         '=')[-1].strip()
-    #     text = soup.find('div', text=lambda t: '{%3}' in t).text.split(
-    #         '=')[-1].strip()
-    #
-    #     # Append the organized item to the list
-    #     elements.append([title, link, text])
-    #
-    # # Print the organized items
-    # for item in organized_items:
-        print('\n'.join(item))
-
     return render_template('format_feed_output.html', extracted_html=extracted_html)
 
 
