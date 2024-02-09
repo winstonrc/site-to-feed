@@ -179,18 +179,38 @@ def step_3():
     if not item_title_template:
         return f'<p>Error: A string is required for Item Title Template.</p>'
 
+    item_title_position = extract_number(item_title_template)
+
     item_link_template = request.form.get('item-link-template')
     if not item_link_template:
         return f'<p>Error: A string is required for Item Link Template.</p>'
+
+    item_link_position = extract_number(item_link_template)
 
     item_content_template = request.form.get('item-content-template')
     if not item_content_template:
         return f'<p>Error: A string is required for Item Content Template.</p>'
 
+    item_content_position = extract_number(item_content_template)
+
     # todo: implement
-    feed_preview = extracted_html
+    feed_preview = {}
+    for key, values in extracted_html.items():
+        feed_preview[key] = [
+            values[item_title_position],
+            values[item_link_position],
+            values[item_content_position]
+        ]
 
     return render_template('format_feed_output.html', feed_title=feed_title, feed_link=feed_link, feed_description=feed_description, feed_preview=feed_preview, extracted_html=extracted_html, html_source=html_source, url=url)
+
+
+def extract_number(number_str):
+    match = re.search(r'{%(\d+)}', number_str)
+    if match:
+        return int(match.group(1)) - 1
+    else:
+        return f'<p>Error: A string of an int is required.</p>'
 
 
 if __name__ == '__main__':
