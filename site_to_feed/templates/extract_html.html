@@ -1,7 +1,12 @@
 {% extends 'get_html.html' %} {% block content %} {{ super() }}
 <details open>
-  <summary>Extracted data:</summary>
-  <pre><code id="html-extraction">{{ extracted_html }}</code></pre>
+  <summary>Feed preview:</summary>
+  <pre><code id="html-extraction"
+  >{% for key, values in extracted_html.items() %}Item {{ key }}
+&#123;%1&#125; = {{ values[0] }}
+&#123;%2&#125; = {{ values[1] }}
+&#123;%3&#125; = {{ values[2] }}
+{% if not loop.last %}{{ '\n' }}{% endif %}{% endfor %}</code></pre>
 </details>
 
 <div id="step-3">

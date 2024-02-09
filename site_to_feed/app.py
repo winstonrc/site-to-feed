@@ -1,4 +1,5 @@
 import logging
+from os import error
 import nh3
 import re
 import requests
@@ -39,7 +40,7 @@ def step_1():
         response = requests.get(url)
         response.raise_for_status()
 
-        html_source = response.text
+        html_source = response.content.decode('utf-8')
 
         cleaned_html = nh3.clean(html=html_source)
 
@@ -68,10 +69,8 @@ def step_2():
 
     translation_table = str.maketrans("", "", '{}*%"=<>/')
 
-    if global_search_pattern == "{%}":
-        elements = BeautifulSoup(html_source, 'html.parser')
-    else:
-        elements = BeautifulSoup(html_source, 'html.parser')
+    elements = BeautifulSoup(html_source, 'html.parser', from_encoding='utf-8')
+    if global_search_pattern != "{%}":
         global_search_pattern = global_search_pattern.translate(
             translation_table)
         elements = elements.find(global_search_pattern)
@@ -86,41 +85,40 @@ def step_2():
     elements = elements.find_all(initial_parameter)
     logger.debug(f"{len(elements)=}\n{elements=}")
 
-    extracted_elements = []
+    extracted_html = {}
     for i, element in enumerate(elements, start=1):
         logger.debug(f"{element=}")
-        transformed_element = f"Item {i}\n"
 
-        for i, param in enumerate(search_parameters, start=1):
-            param = re.sub(r'</[a-zA-Z]+>', '', param)
+        transformed_element = []
+        for param in search_parameters:
             param = param.translate(translation_table)
 
-            match param:
-                case 'a':
-                    value = element.get_text(strip=True)
-                case 'href':
-                    if element.get(param):
+            try:
+                match param:
+                    case 'a':
+                        value = element.a.get_text(strip=True)
+                    case 'href':
+                        if element.find('a'):
+                            value = element.find('a').get(param)
+                        else:
+                            value = element.get(param)
+                    case 'title':
+                        if element.title:
+                            value = element.title.string
+                        elif element.find('a'):
+                            value = element.find('a').get(param)
+                        else:
+                            value = element.get(param)
+                    case 'p':
+                        value = element.p.get_text()
+                    case _:
                         value = element.get(param)
-                    else:
-                        value = element.find('a').get(param)
-                case 'title':
-                    if element.get(param):
-                        value = element.get(param)
-                    else:
-                        value = element.find('a').get(param)
-                case 'p':
-                    value = element.get_text(strip=True)
-                case _:
-                    value = element.get(param)
-
-            logger.debug(f"{param=}; {value=}")
-
-            transformed_element += f"{{%{i}}} = {str(value)}\n"
-
-        extracted_elements.append(transformed_element)
-
-    extracted_html = '\n'.join([str(element)
-                                for element in extracted_elements])
+                logger.debug(f"{param=}; {value=}")
+                transformed_element.append(value)
+            except Exception as error:
+                logger.error(f"{error=}")
+                return f'<p>Error: Error parsing elements. Please go back and check your query again.</p>'
+            extracted_html[i] = transformed_element
 
     logger.debug(
         f"{global_search_pattern=}\n{item_search_pattern=}\n{extracted_html=}"
@@ -153,6 +151,25 @@ def step_3():
     extracted_html = request.form.get('extracted-html')
     if not extracted_html:
         return f'<p>Error: Extracted HTML from step 2 is required.</p>'
+
+    # elements = []
+    # for element in extracted_html:
+    #     soup = BeautifulSoup(element, 'html.parser')
+    #
+    #     # Extract values for {%1}, {%2}, and {%3}
+    #     title = soup.find('div', text=lambda t: '{%1}' in t).text.split(
+    #         '=')[-1].strip()
+    #     link = soup.find('div', text=lambda t: '{%2}' in t).text.split(
+    #         '=')[-1].strip()
+    #     text = soup.find('div', text=lambda t: '{%3}' in t).text.split(
+    #         '=')[-1].strip()
+    #
+    #     # Append the organized item to the list
+    #     elements.append([title, link, text])
+    #
+    # # Print the organized items
+    # for item in organized_items:
+        print('\n'.join(item))
 
     return render_template('format_feed_output.html', extracted_html=extracted_html)
 
