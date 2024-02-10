@@ -4,11 +4,15 @@ This project allows a user to enter a website URL, apply a pattern to website's 
 
 ## Usage
 
-Brief instructions are provided in a collapsed section titled "Instructions" under each step to quickly help the user. Complete usage documentation can be located with the /documentation route to further help the user understand how the tool works.
+Complete usage documentation can be located at the /documentation route.
+Brief instructions are provided in a collapsed sections titled "Instructions" on the main page.
 
-## Tools
+## Dependencies
 
-This project consists of the following tools:
+This project consists of the following dependencies:
 
-- [nh3](https://github.com/messense/nh3): Sanitizes the retrieved HTML for safety
-- [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/): Parses the retrieved html for pattern matching
+- [Flask](https://flask.palletsprojects.com): Backend framework
+- [htmx](https://htmx.org/): Progressively enhances the page if JavaScript is enabled
+- [flask_htmx](https://github.com/edmondchuc/flask-htmx): Handle route delivery depending on whether or not JavaScript is enabled
+- [nh3](https://github.com/messense/nh3): Sanitizes the retrieved HTML
+- [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/): Parses the HTML
