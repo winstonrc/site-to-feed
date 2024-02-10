@@ -2,19 +2,19 @@
   <summary>Feed preview:</summary>
 
   <div id="feed-output-preview" class="scrollable">
-    <h3>{{ feed_title }}</h3>
+    <h3>{{ feed.title }}</h3>
     <p>
-      <a href="{{ feed_link }}">{{ feed_link }}</a><br />
-      {{ feed_description }}
+      <a href="{{ feed.link }}">{{ feed.link }}</a><br />
+      {{ feed.subtitle }}
     </p>
 
     <ol id="feed-preview">
-      {% for key, values in feed_preview.items() %}
+      {% for item in feed.entries %}
       <li>
         <hr />
-        <strong>{{ values[0] }}</strong><br />
-        <a href="{{ values[1] }}">{{ values[1] }}</a><br />
-        {{ values[2] }}<br />
+        <strong>{{ item.title }}</strong><br />
+        <a href="{{ item.link }}">{{ item.link }}</a><br />
+        {{ item.content }}<br />
       </li>
       {% endfor %}
     </ol>

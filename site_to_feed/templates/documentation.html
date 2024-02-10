@@ -181,4 +181,22 @@ Pattern correct is crucial!
   <span class="inline-code">&#123;%3&#125;</span>) to assign as the Content for
   each item in the pattern.
 </p>
+
+<h2>Step 4. Get your feed</h2>
+
+<p><strong>Feed URL:</strong> Use this URL to subscribe to the feed.</p>
+
+<p>
+  <strong>Edit URL:</strong> Use this URL to edit or delete the feed.
+  <br /><br />
+  <strong>Note:</strong> The Edit URL follows a pattern:
+  <span class="inline-code">/feed.html?id=&lt;feed_id&gt;</span> where
+  <span class="inline-code">&lt;feed_id&gt;</span> is replaced by your actual
+  feed ID.
+  <br />
+  If you ever want to edit or delete your feed in the future, extract the
+  <span class="inline-code">&lt;feed_id&gt;</span> from the feed URL (everything
+  besides the <span class="inline-code">.xml</span> extension at the end) to
+  pass to the <span class="inline-code">?id=</span> parameter.
+</p>
 {% endblock %}

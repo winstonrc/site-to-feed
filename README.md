@@ -16,3 +16,4 @@ This project consists of the following dependencies:
 - [flask_htmx](https://github.com/edmondchuc/flask-htmx): Handle route delivery depending on whether or not JavaScript is enabled
 - [nh3](https://github.com/messense/nh3): Sanitizes the retrieved HTML
 - [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/): Parses the HTML
+- [feedgen](https://github.com/lkiesow/python-feedgen): Generates RSS and ATOM feeds
