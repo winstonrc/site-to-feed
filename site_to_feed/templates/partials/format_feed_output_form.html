@@ -1,15 +1,3 @@
-{% extends 'get_html.html' %} {% block content %} {{ super() }}
-<details open>
-  <summary>Feed preview:</summary>
-  <div id="html-extraction" class="scrollable">
-    {% for key, values in extracted_html.items() %} Item {{ key }}<br />
-    &#123;%1&#125; = {{ values[0] }}<br />
-    &#123;%2&#125; = {{ values[1] }}<br />
-    &#123;%3&#125; = {{ values[2] }}<br />
-    {% if not loop.last %}<br />{% endif %}{% endfor %}
-  </div>
-</details>
-
 <div id="step-3">
   <h2>Step 3. Define output format</h2>
 
@@ -20,6 +8,10 @@
     action="/format_feed_output"
     method="POST"
     autocomplete="off"
+    hx-post="/format_feed_output"
+    hx-target="#step-4"
+    hx-swap="innerHTML"
+    hx-trigger="submit"
   >
     <label for="feed-title">Feed Title:</label>
     <input type="text" id="feed-title" name="feed-title" required />
@@ -56,7 +48,12 @@
       required
     /><br />
 
-    <input type="hidden" name="url" value="{{ url }}" required />
+    <input
+      type="hidden"
+      name="url"
+      value="{{ request.args.get('url') or url }}"
+      required
+    />
 
     <input
       type="hidden"
@@ -75,4 +72,3 @@
   </form>
   <br />
 </div>
-{% endblock %}

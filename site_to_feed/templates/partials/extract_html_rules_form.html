@@ -1,19 +1,15 @@
-{% extends 'index.html' %} {% block content %} {{ super() }}
-<details open>
-  <summary>
-    HTML source retrieved from: <a href="{{ url }}">{{ url }}</a>
-  </summary>
-  <pre><code id="html-source">{{ html_source }}</code></pre>
-</details>
-
 <div id="step-2">
   <h2>Step 2. Define extraction rules</h2>
 
   <form
     id="extraction-rules"
     action="/extract_html"
-    method="POST"
+    method="post"
     autocomplete="off"
+    hx-post="/extract_html"
+    hx-target="#step-3"
+    hx-swap="innerHTML"
+    hx-trigger="submit"
   >
     <label for="global-search-pattern">Global Search Pattern:</label>
     <details>
@@ -63,7 +59,12 @@
       required
     ></textarea>
 
-    <input type="hidden" name="url" value="{{ url }}" required />
+    <input
+      type="hidden"
+      name="url"
+      value="{{ request.args.get('url') or url }}"
+      required
+    />
 
     <input
       type="hidden"
@@ -75,4 +76,3 @@
   </form>
   <br />
 </div>
-{% endblock %}

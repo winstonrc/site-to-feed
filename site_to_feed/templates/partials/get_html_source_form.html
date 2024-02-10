@@ -1,0 +1,29 @@
+<div id="step-1">
+  <h2>Step 1. Specify a source page address &#40;URL&#41;</h2>
+
+  <form
+    id="get-html"
+    action="/get_html_source"
+    method="get"
+    autocomplete="off"
+    hx-get="/get_html_source"
+    hx-target="#step-2"
+    hx-swap="innerHTML"
+    hx-trigger="submit"
+    hx-vals="url: #url"
+    hx-args="url={{url}}"
+    hx-on::after-request="if(event.detail.successful) setUrlInSourceCodeElement();"
+  >
+    <label for="url">Enter URL:</label><br />
+    <input
+      type="url"
+      id="url"
+      name="url"
+      value="{{ request.args.get('url') or '' }}"
+      required
+      autocomplete="off"
+    /><br />
+    <button type="submit">Get HTML</button>
+  </form>
+  <br />
+</div>

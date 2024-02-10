@@ -1,0 +1,10 @@
+<details open>
+  <summary>Feed preview:</summary>
+  <div class="scrollable">
+    {% for key, values in extracted_html.items() %} Item {{ key }}<br />
+    &#123;%1&#125; = {{ values[0] }}<br />
+    &#123;%2&#125; = {{ values[1] }}<br />
+    &#123;%3&#125; = {{ values[2] }}<br />
+    {% if not loop.last %}<br />{% endif %}{% endfor %}
+  </div>
+</details>
