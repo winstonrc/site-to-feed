@@ -12,7 +12,7 @@
     hx-trigger="submit"
     hx-vals="url: #url"
     hx-args="url={{url}}"
-    hx-on::after-request="if(event.detail.successful) setUrlInSourceCodeElement();"
+    hx-on::after-request="if(event.detail.successful) setUrlInSourceCodeElement(); this.reset();"
   >
     <label for="url">Enter URL:</label><br />
     <input
