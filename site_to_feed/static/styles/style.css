@@ -40,7 +40,7 @@ code {
   max-height: 45em;
 }
 
-input {
+input:not([type="radio"]) {
   width: 100%;
 }
 

@@ -3,9 +3,11 @@ import logging
 import nh3
 import re
 import requests
+import uuid
 
 from bs4 import BeautifulSoup
-from flask import Flask, render_template, request
+from feedgen.feed import FeedGenerator
+from flask import Flask, abort, render_template, request, send_from_directory
 from flask_htmx import HTMX
 
 
@@ -30,6 +32,11 @@ def documentation():
     return render_template('documentation.html')
 
 
+@app.route('/feeds/<path:filename>')
+def feeds(filename):
+    return send_from_directory('static/feeds', filename)
+
+
 @app.route('/get_html_source', methods=['GET'])
 def step_1():
     url = request.args.get('url')
@@ -51,25 +58,25 @@ def step_1():
             return render_template('step_2_extract_html.html', html_source=cleaned_html, url=url)
     except requests.exceptions.ConnectionError as error:
         logger.error(f"{error=}")
-        return f'<p>Error: Invalid URL</p>'
+        abort(500, 'Error: Invalid URL.')
     except requests.exceptions.RequestException as error:
         logger.error(f"{error=}")
-        return f'<p>Error: {error}</p>'
+        abort(500, 'Error: {error}')
 
 
 @app.route('/extract_html', methods=['POST'])
 def step_2():
     global_search_pattern = request.form.get('global-search-pattern')
     if not global_search_pattern:
-        return f'<p>Error: A string is required for Global Search Pattern.</p>'
+        abort(500, 'Error: A string is required for Global Search Pattern.')
 
     item_search_pattern = request.form.get('item-search-pattern')
     if not item_search_pattern:
-        return f'<p>Error: A string is required for Item Search Pattern.</p>'
+        abort(500, 'Error: A string is required for Item Search Pattern.')
 
     html_source = request.form.get('html-source')
     if not html_source:
-        return f'<p>Error: HTML source from step 1 is required.</p>'
+        abort(500, 'Error: HTML source from step 1 is required.')
 
     translation_table = str.maketrans("", "", '{}*%"=<>/')
 
@@ -124,7 +131,8 @@ def step_2():
                 transformed_element.append(value)
             except Exception as error:
                 logger.error(f"{error=}")
-                return f'<p>Error: Error parsing elements. Please go back and check your query again.</p>'
+                abort(
+                    500, 'Error: Error parsing elements. Please go back and check your query again.')
             extracted_html[i] = transformed_element
 
     logger.debug(
@@ -136,7 +144,7 @@ def step_2():
     else:
         url = request.form.get('url')
         if not url:
-            return f'<p>Error: URL from step 1 is required.</p>'
+            abort(500, 'Error: URL from step 1 is required.')
 
         return render_template('step_3_define_output_format.html', extracted_html=extracted_html, html_source=html_source, url=url)
 
@@ -145,54 +153,97 @@ def step_2():
 def step_3():
     feed_title = request.form.get('feed-title')
     if not feed_title:
-        return f'<p>Error: A string is required for Feed Title.</p>'
+        abort(500, 'Error: A string is required for Feed Title.')
 
     feed_link = request.form.get('feed-link')
     if not feed_link:
-        return f'<p>Error: A string is required for Feed Link.</p>'
+        abort(500, 'Error: A string is required for Feed Link.')
 
     feed_description = request.form.get('feed-description')
     if not feed_description:
-        return f'<p>Error: A string is required for Feed Description.</p>'
+        abort(500, 'Error: A string is required for Feed Description.')
 
     item_title_template = request.form.get('item-title-template')
     if not item_title_template:
-        return f'<p>Error: A string is required for Item Title Template.</p>'
-
+        abort(500, 'Error: A string is required for Item Title Template.')
     item_title_position = extract_number(item_title_template)
 
     item_link_template = request.form.get('item-link-template')
     if not item_link_template:
-        return f'<p>Error: A string is required for Item Link Template.</p>'
-
+        abort(500, 'Error: A string is required for Item Link Template.')
     item_link_position = extract_number(item_link_template)
 
     item_content_template = request.form.get('item-content-template')
     if not item_content_template:
-        return f'<p>Error: A string is required for Item Content Template.</p>'
+        abort(500, 'Error: A string is required for Item Content Template.')
+    item_content_position = extract_number(item_content_template)
+
+    feed_type = request.form.get('feed-type')
+    if not feed_type:
+        abort(500, 'Error: A feed type is required.')
 
     extracted_html = request.form.get('extracted-html')
     if not extracted_html:
-        return f'<p>Error: Extracted HTML from step 2 is required.</p>'
+        abort(500, 'Error: Extracted HTML from step 2 is required.')
 
-    # Convert extracted_html from a str back into a dict to pass onto the next
-    # template and keep the data persisted in the block above.
+    # Convert extracted_html from a str back into a dict
     extracted_html = ast.literal_eval(extracted_html)
 
-    item_content_position = extract_number(item_content_template)
+    # Create a unique id, which is required by ATOM
+    feed_id = str(uuid.uuid4())
 
-    feed_preview = {}
+    # Create filename
+    filename = f"{feed_id}.xml"
+
+    # Create relative feed feed_url
+    feed_url = f"feeds/{filename}"
+
+    # Set path where feed will be saved to
+    feed_path = f"static/{feed_url}"
+
+    # Create the feed
+    fg = FeedGenerator()
+    fg.id(feed_id)
+    fg.title(feed_title)
+    fg.link(href=feed_link, rel='self')
+    fg.subtitle(feed_description)
+    fg.language('en')
+
+    feed_entries = []
     for key, values in extracted_html.items():
-        feed_preview[key] = [
-            values[item_title_position],
-            values[item_link_position],
-            values[item_content_position]
-        ]
+        # Add entry to feedgen
+        fe = fg.add_entry()
+        fe.id(f"{feed_id}/{key}")
+        fe.title(values[item_title_position])
+        fe.link(href=values[item_link_position])
+        fe.content(values[item_content_position])
 
-    # todo: implement feed
+        # Add entry to array that will be passed to the template
+        feed_entries.append({
+            'title': values[item_title_position],
+            'link': values[item_link_position],
+            'content': values[item_content_position]
+        })
+
+    # Create a dict to pass to the template to preview the feed
+    feed = {
+        'title': feed_title,
+        'link': feed_link,
+        'subtitle': feed_description,
+        'entries': feed_entries
+    }
+
+    if feed_type == 'atom':
+        # Write the ATOM feed to a file
+        fg.atom_file(feed_path, pretty=True)
+    elif feed_type == 'rss':
+        # Write the RSS feed to a file
+        fg.rss_file(feed_path, pretty=True)
+    else:
+        abort(500, 'Error: Feed type is required.')
 
     if htmx:
-        return render_template('step_4_get_rss_feed_htmx.html', feed_title=feed_title, feed_link=feed_link, feed_description=feed_description, feed_preview=feed_preview)
+        return render_template('step_4_get_rss_feed_htmx.html', feed=feed, filename=filename)
     else:
         url = request.form.get('url')
         if not url:
@@ -202,7 +253,7 @@ def step_3():
         if not html_source:
             return f'<p>Error: HTML from step 1 is required.</p>'
 
-        return render_template('step_4_get_rss_feed.html', feed_title=feed_title, feed_link=feed_link, feed_description=feed_description, feed_preview=feed_preview, extracted_html=extracted_html, html_source=html_source, url=url)
+        return render_template('step_4_get_rss_feed.html', feed=feed, extracted_html=extracted_html, html_source=html_source, url=url, filename=filename)
 
 
 def extract_number(number_str):
@@ -210,7 +261,7 @@ def extract_number(number_str):
     if match:
         return int(match.group(1)) - 1
     else:
-        return f'<p>Error: A string of an int is required.</p>'
+        abort(500, 'Error: A string of an int is required.')
 
 
 if __name__ == '__main__':
