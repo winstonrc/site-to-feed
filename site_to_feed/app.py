@@ -4,6 +4,7 @@ from bs4.element import DEFAULT_OUTPUT_ENCODING
 import nh3
 import re
 import requests
+import toml
 import uuid
 
 from bs4 import BeautifulSoup
@@ -94,6 +95,10 @@ def step_2():
     if not html_source:
         abort(500, 'Error: HTML source from step 1 is required.')
 
+    url = request.form.get('url')
+    if not url:
+        abort(500, 'Error: URL from step 1 is required.')
+
     translation_table = str.maketrans("", "", '{}*%"=<>/')
 
     elements = BeautifulSoup(html_source, 'html.parser')
@@ -151,18 +156,10 @@ def step_2():
                     500, 'Error: Error parsing elements. Please go back and check your query again.')
             extracted_html[i] = transformed_element
 
-    logger.debug(
-        f"{global_search_pattern=}\n{item_search_pattern=}\n{extracted_html=}"
-    )
-
     if htmx:
-        return render_template('step_3_define_output_format_htmx.html', extracted_html=extracted_html)
+        return render_template('step_3_define_output_format_htmx.html', extracted_html=extracted_html, global_search_pattern=global_search_pattern, item_search_pattern=item_search_pattern, url=url)
     else:
-        url = request.form.get('url')
-        if not url:
-            abort(500, 'Error: URL from step 1 is required.')
-
-        return render_template('step_3_define_output_format.html', extracted_html=extracted_html, html_source=html_source, url=url)
+        return render_template('step_3_define_output_format.html', extracted_html=extracted_html, global_search_pattern=global_search_pattern, item_search_pattern=item_search_pattern, html_source=html_source, url=url)
 
 
 @app.route('/format_feed_output', methods=['POST'])
@@ -182,17 +179,18 @@ def step_3():
     item_title_template = request.form.get('item-title-template')
     if not item_title_template:
         abort(500, 'Error: A string is required for Item Title Template.')
-    item_title_position = extract_number(item_title_template)
+    item_title_position = convert_item_position_str_to_int(item_title_template)
 
     item_link_template = request.form.get('item-link-template')
     if not item_link_template:
         abort(500, 'Error: A string is required for Item Link Template.')
-    item_link_position = extract_number(item_link_template)
+    item_link_position = convert_item_position_str_to_int(item_link_template)
 
     item_content_template = request.form.get('item-content-template')
     if not item_content_template:
         abort(500, 'Error: A string is required for Item Content Template.')
-    item_content_position = extract_number(item_content_template)
+    item_content_position = convert_item_position_str_to_int(
+        item_content_template)
 
     feed_type = request.form.get('feed-type')
     if not feed_type:
@@ -201,9 +199,20 @@ def step_3():
     extracted_html = request.form.get('extracted-html')
     if not extracted_html:
         abort(500, 'Error: Extracted HTML from step 2 is required.')
-
     # Convert extracted_html from a str back into a dict
     extracted_html = ast.literal_eval(extracted_html)
+
+    global_search_pattern = request.form.get('global-search-pattern')
+    if not global_search_pattern:
+        abort(500, 'Error: A string is required for Global Search Pattern.')
+
+    item_search_pattern = request.form.get('item-search-pattern')
+    if not item_search_pattern:
+        abort(500, 'Error: A string is required for Item Search Pattern.')
+
+    url = request.form.get('url')
+    if not url:
+        return f'<p>Error: URL from step 1 is required.</p>'
 
     # Convert the html into a list of named tuples
     feed_entries = create_feed_entries_from_html(
@@ -215,8 +224,24 @@ def step_3():
 
     # Create a unique id, which is required by ATOM
     feed_id = str(uuid.uuid4()).replace('-', '')
-    filename = f"{feed_id}.xml"
-    feed_filepath = f"static/feeds/{filename}"
+    feeds_filepath = "static/feeds"
+    feed_xml_filepath = f"{feeds_filepath}/{feed_id}.xml"
+    feed_toml_filepath = f"{feeds_filepath}/{feed_id}.toml"
+
+    # Save values to a toml file to regenerate feed in the future
+    toml_data = {
+        'url': url,
+        'global_search_pattern': global_search_pattern,
+        'item_search_pattern': item_search_pattern,
+        'feed_title': feed_title,
+        'feed_link': feed_link,
+        'feed_description': feed_description,
+        'item_title_position': item_title_position,
+        'item_link_position': item_link_position,
+        'item_content_position': item_content_position
+    }
+    with open(feed_toml_filepath, 'w') as file:
+        toml.dump(toml_data, file)
 
     # Create the feed
     feed = generate_feed(
@@ -232,12 +257,12 @@ def step_3():
         # Get the ATOM feed as string
         # atomfeed = feed.atom_str(pretty=True)
         # Write the ATOM feed to a file
-        feed.atom_file(feed_filepath)
+        feed.atom_file(feed_xml_filepath)
     elif feed_type == 'rss':
         # Get the RSS feed as string
         # rssfeed = feed.rss_str(pretty=True)
         # Write the RSS feed to a file
-        feed.rss_file(feed_filepath)
+        feed.rss_file(feed_xml_filepath)
     else:
         abort(500, 'Error: Feed type is required.')
 
@@ -252,10 +277,6 @@ def step_3():
     if htmx:
         return render_template('step_4_get_rss_feed_htmx.html', feed=feed_preview, feed_id=feed_id)
     else:
-        url = request.form.get('url')
-        if not url:
-            return f'<p>Error: URL from step 1 is required.</p>'
-
         html_source = request.form.get('html-source')
         if not html_source:
             return f'<p>Error: HTML from step 1 is required.</p>'
@@ -311,7 +332,7 @@ def create_feed_entries_from_html(html: dict, item_title_position: int, item_lin
     return feed_entries
 
 
-def extract_number(number_str: str) -> int:
+def convert_item_position_str_to_int(number_str: str) -> int:
     match = re.search(r'{%(\d+)}', number_str)
     if match:
         return int(match.group(1)) - 1
