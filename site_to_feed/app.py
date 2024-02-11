@@ -37,15 +37,6 @@ def feeds(filename):
     return send_from_directory('static/feeds', filename)
 
 
-<<<<<<< HEAD
-@app.route('/feed')
-def feed():
-    feed_id = request.args.get('id')
-    return render_template('feed.html', feed_id=feed_id)
-
-
-=======
->>>>>>> origin/main
 @app.route('/get_html_source', methods=['GET'])
 def step_1():
     url = request.args.get('url')
@@ -204,16 +195,10 @@ def step_3():
     # Create filename
     filename = f"{feed_id}.xml"
 
-<<<<<<< HEAD
     # Set path where feed will be saved to
     feed_filepath = f"static/feeds/{filename}"
-=======
     # Create relative feed feed_url
     feed_url = f"feeds/{filename}"
-
-    # Set path where feed will be saved to
-    feed_path = f"static/{feed_url}"
->>>>>>> origin/main
 
     # Create the feed
     fg = FeedGenerator()
@@ -248,7 +233,6 @@ def step_3():
     }
 
     if feed_type == 'atom':
-<<<<<<< HEAD
         # Get the ATOM feed as string
         atomfeed = fg.atom_str(pretty=True)
         # Write the ATOM feed to a file
@@ -258,22 +242,11 @@ def step_3():
         rssfeed = fg.rss_str(pretty=True)
         # Write the RSS feed to a file
         fg.rss_file(feed_filepath)
-=======
-        # Write the ATOM feed to a file
-        fg.atom_file(feed_path, pretty=True)
-    elif feed_type == 'rss':
-        # Write the RSS feed to a file
-        fg.rss_file(feed_path, pretty=True)
->>>>>>> origin/main
     else:
         abort(500, 'Error: Feed type is required.')
 
     if htmx:
-<<<<<<< HEAD
         return render_template('step_4_get_rss_feed_htmx.html', feed=feed, filename=filename, feed_id=feed_id)
-=======
-        return render_template('step_4_get_rss_feed_htmx.html', feed=feed, filename=filename)
->>>>>>> origin/main
     else:
         url = request.form.get('url')
         if not url:
@@ -283,11 +256,7 @@ def step_3():
         if not html_source:
             return f'<p>Error: HTML from step 1 is required.</p>'
 
-<<<<<<< HEAD
         return render_template('step_4_get_rss_feed.html', feed=feed, filename=filename, feed_id=feed_id, extracted_html=extracted_html, html_source=html_source, url=url)
-=======
-        return render_template('step_4_get_rss_feed.html', feed=feed, extracted_html=extracted_html, html_source=html_source, url=url, filename=filename)
->>>>>>> origin/main
 
 
 def extract_number(number_str):
