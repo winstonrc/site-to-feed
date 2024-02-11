@@ -37,6 +37,12 @@ def feeds(filename):
     return send_from_directory('static/feeds', filename)
 
 
+@app.route('/feed')
+def feed():
+    feed_id = request.args.get('id')
+    return render_template('feed.html', feed_id=feed_id)
+
+
 @app.route('/get_html_source', methods=['GET'])
 def step_1():
     url = request.args.get('url')
@@ -53,9 +59,9 @@ def step_1():
         cleaned_html = nh3.clean(html=html_source)
 
         if htmx:
-            return render_template('step_2_extract_html_htmx.html', html_source=cleaned_html)
+            return render_template('step_2_define_extraction_rules_htmx.html', html_source=cleaned_html)
         else:
-            return render_template('step_2_extract_html.html', html_source=cleaned_html, url=url)
+            return render_template('step_2_define_extraction_rules.html', html_source=cleaned_html, url=url)
     except requests.exceptions.ConnectionError as error:
         logger.error(f"{error=}")
         abort(500, 'Error: Invalid URL.')
@@ -244,7 +250,7 @@ def step_3():
         abort(500, 'Error: Feed type is required.')
 
     if htmx:
-        return render_template('step_4_get_rss_feed_htmx.html', feed=feed, filename=filename)
+        return render_template('step_4_get_rss_feed_htmx.html', feed=feed, filename=filename, feed_id=feed_id)
     else:
         url = request.form.get('url')
         if not url:
@@ -254,7 +260,7 @@ def step_3():
         if not html_source:
             return f'<p>Error: HTML from step 1 is required.</p>'
 
-        return render_template('step_4_get_rss_feed.html', feed=feed, extracted_html=extracted_html, html_source=html_source, url=url, filename=filename)
+        return render_template('step_4_get_rss_feed.html', feed=feed, filename=filename, feed_id=feed_id, extracted_html=extracted_html, html_source=html_source, url=url)
 
 
 def extract_number(number_str):

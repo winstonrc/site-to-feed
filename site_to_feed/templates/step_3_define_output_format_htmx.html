@@ -1,4 +1,12 @@
-{% block content %} {% include 'partials/extracted_html.html' %} {% include
-'partials/format_feed_output_form.html' %}
+{% block content %}
+<br />
+
+{% include 'partials/extracted_html.html' %}
+
+<div id="step-3">
+  <h2>Step 3. Define output format</h2>
+  {% include 'partials/format_feed_output_form.html' %}
+</div>
+
 <div id="step-4"></div>
 {% endblock %}

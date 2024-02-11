@@ -1,14 +1,13 @@
-<div id="step-4">
-  <h2>Step 4. Get your feed</h2>
+<p>
+  <strong>Feed URL:</strong>
+  <a href="{{ url_for('feeds', filename=filename) }}"
+    >{{ url_for('feeds', filename=filename, _external=True) }}
+  </a>
+</p>
 
-  <p>
-    <strong>Feed URL:</strong>
-    <a href="{{ url_for('feeds', filename=filename) }}"
-      >{{ url_for('feeds', filename=filename, _external=True) }}
-    </a>
-  </p>
-
-  <p>
-    <strong>Edit URL:</strong>
-  </p>
-</div>
+<p>
+  <strong>Edit URL:</strong>
+  <a href="{{ url_for('feed', id=feed_id) }}"
+    >{{ url_for('feed', id=feed_id, _external=True) }}
+  </a>
+</p>

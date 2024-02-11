@@ -1,95 +1,85 @@
-<div id="step-3">
-  <h2>Step 3. Define output format</h2>
+<h3>Feed properties</h3>
 
-  <h3>Feed properties</h3>
+<form
+  id="output-format"
+  action="/format_feed_output"
+  method="POST"
+  autocomplete="off"
+  hx-post="/format_feed_output"
+  hx-target="#step-4"
+  hx-swap="innerHTML"
+  hx-trigger="submit"
+>
+  <label for="feed-title">Feed Title:</label>
+  <input type="text" id="feed-title" name="feed-title" required />
 
-  <form
-    id="output-format"
-    action="/format_feed_output"
-    method="POST"
-    autocomplete="off"
-    hx-post="/format_feed_output"
-    hx-target="#step-4"
-    hx-swap="innerHTML"
-    hx-trigger="submit"
-  >
-    <label for="feed-title">Feed Title:</label>
-    <input type="text" id="feed-title" name="feed-title" required />
+  <label for="feed-link">Feed Link:</label>
+  <input type="url" id="feed-link" name="feed-link" required />
 
-    <label for="feed-link">Feed Link:</label>
-    <input type="url" id="feed-link" name="feed-link" required />
+  <label for="feed-description">Feed Description:</label>
+  <input type="text" id="feed-description" name="feed-description" required />
 
-    <label for="feed-description">Feed Description:</label>
-    <input type="text" id="feed-description" name="feed-description" required />
+  <h3>Item properties</h3>
 
-    <h3>Item properties</h3>
+  <label for="item-title-template">Item Title Template:</label>
+  <input
+    type="text"
+    id="item-title-template"
+    name="item-title-template"
+    required
+  />
 
-    <label for="item-title-template">Item Title Template:</label>
-    <input
-      type="text"
-      id="item-title-template"
-      name="item-title-template"
-      required
-    />
+  <label for="item-link-template">Item Link Template:</label>
+  <input
+    type="text"
+    id="item-link-template"
+    name="item-link-template"
+    required
+  />
 
-    <label for="item-link-template">Item Link Template:</label>
-    <input
-      type="text"
-      id="item-link-template"
-      name="item-link-template"
-      required
-    />
-
-    <label for="item-content-template">Item Content Template:</label>
-    <input
-      type="text"
-      id="item-content-template"
-      name="item-content-template"
-      required
-    />
-    <br />
-
-    <h3>Atom or RSS feed?</h3>
-
-    <details>
-      <summary>Instructions</summary>
-      <p>
-        Most RSS readers support both types. Leave as default value if unsure.
-      </p>
-    </details>
-
-    <label for="atom">
-      <input type="radio" id="atom" name="feed-type" value="atom" checked />
-      Atom
-    </label>
-    <label for="rss">
-      <input type="radio" id="rss" name="feed-type" value="rss" />
-      RSS
-    </label>
-    <br />
-
-    <input
-      type="hidden"
-      name="url"
-      value="{{ request.args.get('url') or url }}"
-      required
-    />
-
-    <input
-      type="hidden"
-      name="html-source"
-      value="{{ html_source }}"
-      required
-    />
-
-    <input
-      type="hidden"
-      name="extracted-html"
-      value="{{ extracted_html }}"
-      required
-    />
-    <br />
-    <button type="submit">Preview</button>
-  </form>
+  <label for="item-content-template">Item Content Template:</label>
+  <input
+    type="text"
+    id="item-content-template"
+    name="item-content-template"
+    required
+  />
   <br />
-</div>
+
+  <h3>Atom or RSS feed?</h3>
+
+  <details>
+    <summary>Instructions</summary>
+    <p>
+      Most RSS readers support both types. Leave as default value if unsure.
+    </p>
+  </details>
+
+  <label for="atom">
+    <input type="radio" id="atom" name="feed-type" value="atom" checked />
+    Atom
+  </label>
+  <label for="rss">
+    <input type="radio" id="rss" name="feed-type" value="rss" />
+    RSS
+  </label>
+  <br />
+
+  <input
+    type="hidden"
+    name="url"
+    value="{{ request.args.get('url') or url }}"
+    required
+  />
+
+  <input type="hidden" name="html-source" value="{{ html_source }}" required />
+
+  <input
+    type="hidden"
+    name="extracted-html"
+    value="{{ extracted_html }}"
+    required
+  />
+  <br />
+  <button type="submit">Preview</button>
+</form>
