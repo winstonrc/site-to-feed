@@ -1,11 +1,13 @@
 import ast
 import logging
+from bs4.element import DEFAULT_OUTPUT_ENCODING
 import nh3
 import re
 import requests
 import uuid
 
 from bs4 import BeautifulSoup
+from collections import namedtuple
 from feedgen.feed import FeedGenerator
 from flask import Flask, abort, render_template, request, send_from_directory
 from flask_htmx import HTMX
@@ -21,6 +23,8 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+FeedEntry = namedtuple('FeedEntry', ['title', 'link', 'content'])
+
 
 @app.route('/')
 def index():
@@ -32,11 +36,17 @@ def documentation():
     return render_template('documentation.html')
 
 
-@app.route('/feeds/<path:filename>')
-def feeds(filename):
-    return send_from_directory('static/feeds', filename)
+@app.route('/feeds/<path:feed_id>.xml')
+def feeds(feed_id):
+    return send_from_directory('static/feeds', f"{feed_id}.xml")
 
 
+@app.route('/feeds/<path:feed_id>')
+def edit_feed(feed_id):
+    return render_template('feed.html', feed_id=feed_id)
+
+
+# todo: remove?
 @app.route('/feed')
 def feed():
     feed_id = request.args.get('id')
@@ -195,62 +205,52 @@ def step_3():
     # Convert extracted_html from a str back into a dict
     extracted_html = ast.literal_eval(extracted_html)
 
+    # Convert the html into a list of named tuples
+    feed_entries = create_feed_entries_from_html(
+        extracted_html,
+        item_title_position,
+        item_link_position,
+        item_content_position
+    )
+
     # Create a unique id, which is required by ATOM
-    feed_id = str(uuid.uuid4())
-
-    # Create filename
+    feed_id = str(uuid.uuid4()).replace('-', '')
     filename = f"{feed_id}.xml"
-
-    # Set path where feed will be saved to
     feed_filepath = f"static/feeds/{filename}"
 
     # Create the feed
-    fg = FeedGenerator()
-    fg.id(feed_id)
-    fg.title(feed_title)
-    fg.link(href=feed_link, rel='self')
-    fg.subtitle(feed_description)
-    fg.language('en')
+    feed = generate_feed(
+        feed_id,
+        feed_title,
+        feed_link,
+        feed_description
+    )
 
-    feed_entries = []
-    for key, values in extracted_html.items():
-        # Add entry to feedgen
-        fe = fg.add_entry()
-        fe.id(f"{feed_id}/{key}")
-        fe.title(values[item_title_position])
-        fe.link(href=values[item_link_position])
-        fe.content(values[item_content_position])
+    add_entries_to_feed(feed, feed_entries)
 
-        # Add entry to array that will be passed to the template
-        feed_entries.append({
-            'title': values[item_title_position],
-            'link': values[item_link_position],
-            'content': values[item_content_position]
-        })
+    if feed_type == 'atom':
+        # Get the ATOM feed as string
+        # atomfeed = feed.atom_str(pretty=True)
+        # Write the ATOM feed to a file
+        feed.atom_file(feed_filepath)
+    elif feed_type == 'rss':
+        # Get the RSS feed as string
+        # rssfeed = feed.rss_str(pretty=True)
+        # Write the RSS feed to a file
+        feed.rss_file(feed_filepath)
+    else:
+        abort(500, 'Error: Feed type is required.')
 
     # Create a dict to pass to the template to preview the feed
-    feed = {
+    feed_preview = {
         'title': feed_title,
         'link': feed_link,
         'subtitle': feed_description,
         'entries': feed_entries
     }
 
-    if feed_type == 'atom':
-        # Get the ATOM feed as string
-        atomfeed = fg.atom_str(pretty=True)
-        # Write the ATOM feed to a file
-        fg.atom_file(feed_filepath)
-    elif feed_type == 'rss':
-        # Get the RSS feed as string
-        rssfeed = fg.rss_str(pretty=True)
-        # Write the RSS feed to a file
-        fg.rss_file(feed_filepath)
-    else:
-        abort(500, 'Error: Feed type is required.')
-
     if htmx:
-        return render_template('step_4_get_rss_feed_htmx.html', feed=feed, filename=filename, feed_id=feed_id)
+        return render_template('step_4_get_rss_feed_htmx.html', feed=feed_preview, feed_id=feed_id)
     else:
         url = request.form.get('url')
         if not url:
@@ -260,10 +260,58 @@ def step_3():
         if not html_source:
             return f'<p>Error: HTML from step 1 is required.</p>'
 
-        return render_template('step_4_get_rss_feed.html', feed=feed, filename=filename, feed_id=feed_id, extracted_html=extracted_html, html_source=html_source, url=url)
+        return render_template('step_4_get_rss_feed.html', feed=feed_preview, feed_id=feed_id, extracted_html=extracted_html, html_source=html_source, url=url)
 
 
-def extract_number(number_str):
+def generate_feed(feed_id: str, feed_title: str, feed_link: str, feed_description, feed_language: str = 'en') -> FeedGenerator:
+    fg = FeedGenerator()
+    fg.id(feed_id)
+    fg.title(feed_title)
+    fg.link(href=feed_link, rel='self')
+    fg.subtitle(feed_description)
+    fg.language(feed_language)
+
+    return fg
+
+
+def add_entries_to_feed(fg: FeedGenerator, entries: list[FeedEntry]) -> None:
+    """
+    The entries do not currently posses a datetime.
+    They appear in the correct order in the feed preview, but they are
+    reversed in the feed itself because FeedGenerator adds entries
+    oldest to newest by default without a pubDate().
+    Accordingly, reversing the entries list before iteration will add
+    the oldest content first, which results in the newest entries
+    displaying first in the generated xml file.
+
+    todo: Look into updating this in case we receive entries that have
+    a datetime to set for fe.pubDate().
+    """
+    reversed_entries = list(reversed(entries))
+
+    feed_id = fg.id()
+
+    for i, entry in enumerate(reversed_entries, start=1):
+        fe = fg.add_entry()
+        fe.id(f"{feed_id}/{i}")
+        fe.title(entry.title)
+        fe.link(href=entry.link)
+        fe.content(entry.content)
+
+
+def create_feed_entries_from_html(html: dict, item_title_position: int, item_link_position: int, item_content_position: int) -> list[FeedEntry]:
+    feed_entries = []
+    for key, values in html.items():
+        entry = FeedEntry(
+            title=values[item_title_position],
+            link=values[item_link_position],
+            content=values[item_content_position]
+        )
+        feed_entries.append(entry)
+    return feed_entries
+
+
+def extract_number(number_str: str) -> int:
     match = re.search(r'{%(\d+)}', number_str)
     if match:
         return int(match.group(1)) - 1
