@@ -75,29 +75,29 @@ def step_1():
             return render_template('step_2_define_extraction_rules.html', html_source=cleaned_html, url=url)
     except requests.exceptions.ConnectionError as error:
         logger.error(f"{error=}")
-        abort(500, 'Error: Invalid URL.')
+        return '<p>Error: Invalid URL.</p>'
     except requests.exceptions.RequestException as error:
         logger.error(f"{error=}")
-        abort(500, 'Error: {error}')
+        return '<p>Error: {error}</p>'
 
 
 @app.route('/extract_html', methods=['POST'])
 def step_2():
     global_search_pattern = request.form.get('global-search-pattern')
     if not global_search_pattern:
-        abort(500, 'Error: A string is required for Global Search Pattern.')
+        return '<p>Error: A string is required for Global Search Pattern.</p>'
 
     item_search_pattern = request.form.get('item-search-pattern')
     if not item_search_pattern:
-        abort(500, 'Error: A string is required for Item Search Pattern.')
+        return '<p>Error: A string is required for Item Search Pattern.</p>'
 
     html_source = request.form.get('html-source')
     if not html_source:
-        abort(500, 'Error: HTML source from step 1 is required.')
+        return '<p>Error: HTML source from step 1 is required.</p>'
 
     url = request.form.get('url')
     if not url:
-        abort(500, 'Error: URL from step 1 is required.')
+        return '<p>Error: URL from step 1 is required.</p>'
 
     extracted_html = parse_html_via_patterns(
         html_source,
@@ -115,49 +115,49 @@ def step_2():
 def step_3():
     feed_title = request.form.get('feed-title')
     if not feed_title:
-        abort(500, 'Error: A string is required for Feed Title.')
+        return '<p>Error: A string is required for Feed Title.</p>'
 
     feed_link = request.form.get('feed-link')
     if not feed_link:
-        abort(500, 'Error: A string is required for Feed Link.')
+        return '<p>Error: A string is required for Feed Link.</p>'
 
     feed_description = request.form.get('feed-description')
     if not feed_description:
-        abort(500, 'Error: A string is required for Feed Description.')
+        return '<p>Error: A string is required for Feed Description.</p>'
 
     item_title_template = request.form.get('item-title-template')
     if not item_title_template:
-        abort(500, 'Error: A string is required for Item Title Template.')
+        return '<p>Error: A string is required for Item Title Template.</p>'
     item_title_position = convert_item_position_str_to_int(item_title_template)
 
     item_link_template = request.form.get('item-link-template')
     if not item_link_template:
-        abort(500, 'Error: A string is required for Item Link Template.')
+        return '<p>Error: A string is required for Item Link Template.</p>'
     item_link_position = convert_item_position_str_to_int(item_link_template)
 
     item_content_template = request.form.get('item-content-template')
     if not item_content_template:
-        abort(500, 'Error: A string is required for Item Content Template.')
+        return '<p>Error: A string is required for Item Content Template.</p>'
     item_content_position = convert_item_position_str_to_int(
         item_content_template)
 
     feed_type = request.form.get('feed-type')
     if not feed_type:
-        abort(500, 'Error: A feed type is required.')
+        return '<p>Error: A feed type is required.</p>'
 
     extracted_html = request.form.get('extracted-html')
     if not extracted_html:
-        abort(500, 'Error: Extracted HTML from step 2 is required.')
+        return '<p>Error: Extracted HTML from step 2 is required.</p>'
     # Convert extracted_html from a str back into a dict
     extracted_html = ast.literal_eval(extracted_html)
 
     global_search_pattern = request.form.get('global-search-pattern')
     if not global_search_pattern:
-        abort(500, 'Error: A string is required for Global Search Pattern.')
+        return '<p>Error: A string is required for Global Search Pattern.</p>'
 
     item_search_pattern = request.form.get('item-search-pattern')
     if not item_search_pattern:
-        abort(500, 'Error: A string is required for Item Search Pattern.')
+        return '<p>Error: A string is required for Item Search Pattern.</p>'
 
     url = request.form.get('url')
     if not url:
@@ -213,7 +213,7 @@ def step_3():
         # Write the RSS feed to a file
         feed.rss_file(feed_xml_filepath)
     else:
-        abort(500, 'Error: Feed type is required.')
+        return '<p>Error: Feed type is required.</p>'
 
     # Create a dict to pass to the template to preview the feed
     feed_preview = {
@@ -288,8 +288,7 @@ def parse_html_via_patterns(html_source: str, global_search_pattern: str, item_s
                 transformed_element.append(value)
             except Exception as error:
                 logger.error(f"{error=}")
-                abort(
-                    500, 'Error: Error parsing elements. Please go back and check your query again.')
+                return '<p>Error: Error parsing elements. Please go back and check your query again.</p>'
             extracted_html[i] = transformed_element
 
     return extracted_html
@@ -348,7 +347,7 @@ def convert_item_position_str_to_int(number_str: str) -> int:
     if match:
         return int(match.group(1)) - 1
     else:
-        abort(500, 'Error: A string of an int is required.')
+        return '<p>Error: A string of an int is required.</p>'
 
 
 if __name__ == '__main__':
