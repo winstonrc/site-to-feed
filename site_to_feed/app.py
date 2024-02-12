@@ -88,7 +88,7 @@ def feeds(feed_id):
     return send_from_directory('static/feeds', f"{feed_id}.xml")
 
 
-@app.route('/feeds/<path:feed_id>')
+@app.route('/feeds/<path:feed_id>', methods=['GET'])
 def view_feed(feed_id):
     feeds_filepath = "static/feeds"
     feed_xml_filepath = f"{feeds_filepath}/{feed_id}.xml"
@@ -121,13 +121,6 @@ def view_feed(feed_id):
     }
 
     return render_template('feed.html', feed=feed_preview, feed_id=feed_id)
-
-
-# todo: remove?
-@app.route('/feed')
-def feed():
-    feed_id = request.args.get('id')
-    return render_template('feed.html', feed_id=feed_id)
 
 
 @app.route('/get_html_source', methods=['GET'])
