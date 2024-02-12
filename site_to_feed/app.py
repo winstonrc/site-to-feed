@@ -99,62 +99,11 @@ def step_2():
     if not url:
         abort(500, 'Error: URL from step 1 is required.')
 
-    translation_table = str.maketrans("", "", '{}*%"=<>/')
-
-    elements = BeautifulSoup(html_source, 'html.parser')
-    if global_search_pattern != "{%}":
-        global_search_pattern = global_search_pattern.translate(
-            translation_table)
-        elements = elements.find(global_search_pattern)
-
-    search_parameters = [str(line)
-                         for line in item_search_pattern.splitlines()]
-    logger.debug(f"{search_parameters=}")
-
-    # Pop and format the first line, which is used for the initial filtering
-    initial_parameter = search_parameters.pop(0).translate(translation_table)
-
-    elements = elements.find_all(initial_parameter)
-    logger.debug(f"{len(elements)=}\n{elements=}")
-
-    extracted_html = {}
-    for i, element in enumerate(elements, start=1):
-        logger.debug(f"{element=}")
-
-        transformed_element = []
-        for param in search_parameters:
-            # Remove matching closing tag
-            param = re.sub(r'</[a-zA-Z]+>', '', param)
-            # Retrieve element or attribute name
-            param = param.translate(translation_table)
-
-            try:
-                match param:
-                    case 'a':
-                        value = element.a.get_text(strip=True)
-                    case 'href':
-                        if element.find('a'):
-                            value = element.find('a').get(param)
-                        else:
-                            value = element.get(param)
-                    case 'title':
-                        if element.title:
-                            value = element.title.string
-                        elif element.find('a'):
-                            value = element.find('a').get(param)
-                        else:
-                            value = element.get(param)
-                    case 'p':
-                        value = element.p.get_text()
-                    case _:
-                        value = element.get(param)
-                logger.debug(f"{param=}; {value=}")
-                transformed_element.append(value)
-            except Exception as error:
-                logger.error(f"{error=}")
-                abort(
-                    500, 'Error: Error parsing elements. Please go back and check your query again.')
-            extracted_html[i] = transformed_element
+    extracted_html = parse_html_via_patterns(
+        html_source,
+        global_search_pattern,
+        item_search_pattern
+    )
 
     if htmx:
         return render_template('step_3_define_output_format_htmx.html', extracted_html=extracted_html, global_search_pattern=global_search_pattern, item_search_pattern=item_search_pattern, url=url)
@@ -282,6 +231,68 @@ def step_3():
             return f'<p>Error: HTML from step 1 is required.</p>'
 
         return render_template('step_4_get_rss_feed.html', feed=feed_preview, feed_id=feed_id, extracted_html=extracted_html, html_source=html_source, url=url)
+
+
+def parse_html_via_patterns(html_source: str, global_search_pattern: str, item_search_pattern: str):
+    translation_table = str.maketrans("", "", '{}*%"=<>/')
+
+    elements = BeautifulSoup(html_source, 'html.parser')
+
+    if global_search_pattern != "{%}":
+        global_search_pattern = global_search_pattern.translate(
+            translation_table)
+        elements = elements.find(global_search_pattern)
+
+    search_parameters = [str(line)
+                         for line in item_search_pattern.splitlines()]
+    logger.debug(f"{search_parameters=}")
+
+    # Pop and format the first line, which is used for the initial filtering
+    initial_parameter = search_parameters.pop(0).translate(translation_table)
+
+    elements = elements.find_all(initial_parameter)
+    logger.debug(f"{len(elements)=}\n{elements=}")
+
+    extracted_html = {}
+    for i, element in enumerate(elements, start=1):
+        logger.debug(f"{element=}")
+
+        transformed_element = []
+        for param in search_parameters:
+            # Remove matching closing tag
+            param = re.sub(r'</[a-zA-Z]+>', '', param)
+            # Retrieve element or attribute name
+            param = param.translate(translation_table)
+
+            try:
+                match param:
+                    case 'a':
+                        value = element.a.get_text(strip=True)
+                    case 'href':
+                        if element.find('a'):
+                            value = element.find('a').get(param)
+                        else:
+                            value = element.get(param)
+                    case 'title':
+                        if element.title:
+                            value = element.title.string
+                        elif element.find('a'):
+                            value = element.find('a').get(param)
+                        else:
+                            value = element.get(param)
+                    case 'p':
+                        value = element.p.get_text()
+                    case _:
+                        value = element.get(param)
+                logger.debug(f"{param=}; {value=}")
+                transformed_element.append(value)
+            except Exception as error:
+                logger.error(f"{error=}")
+                abort(
+                    500, 'Error: Error parsing elements. Please go back and check your query again.')
+            extracted_html[i] = transformed_element
+
+    return extracted_html
 
 
 def generate_feed(feed_id: str, feed_title: str, feed_link: str, feed_description, feed_language: str = 'en') -> FeedGenerator:
