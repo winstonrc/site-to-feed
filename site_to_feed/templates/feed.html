@@ -1,12 +1,4 @@
-<!DOCTYPE html>
-<html lang="">
-  <head>
-    <meta charset="utf-8">
-    <title></title>
-  </head>
-  <body>
-    <header></header>
-    <main></main>
-    <footer></footer>
-  </body>
-</html>
+{% extends 'layout.html' %} {% block content %}
+<h2>Feed</h2>
+{% include 'partials/feed_preview.html' %} {% include 'partials/feed_links.html'
+%} {% include 'partials/edit_feed.html' %} {% endblock %}

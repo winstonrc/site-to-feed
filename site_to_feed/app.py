@@ -27,6 +27,52 @@ logger = logging.getLogger(__name__)
 FeedEntry = namedtuple('FeedEntry', ['title', 'link', 'content'])
 
 
+class FeedConfig:
+    def __init__(self, filepath):
+        with open(filepath, 'r') as file:
+            self._data = toml.load(file)
+
+    @property
+    def url(self) -> str:
+        return self._data['url']
+
+    @property
+    def global_search_pattern(self) -> str:
+        return self._data['global_search_pattern']
+
+    @property
+    def item_search_pattern(self) -> str:
+        return self._data['item_search_pattern']
+
+    @property
+    def feed_title(self) -> str:
+        return self._data['feed_title']
+
+    @property
+    def feed_link(self) -> str:
+        return self._data['feed_link']
+
+    @property
+    def feed_description(self) -> str:
+        return self._data['feed_description']
+
+    @property
+    def item_title_position(self) -> int:
+        return int(self._data['item_title_position'])
+
+    @property
+    def item_link_position(self) -> int:
+        return int(self._data['item_link_position'])
+
+    @property
+    def item_content_position(self) -> int:
+        return int(self._data['item_content_position'])
+
+    @property
+    def feed_type(self) -> str:
+        return self._data['feed_type']
+
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -44,7 +90,37 @@ def feeds(feed_id):
 
 @app.route('/feeds/<path:feed_id>')
 def edit_feed(feed_id):
-    return render_template('feed.html', feed_id=feed_id)
+    feeds_filepath = "static/feeds"
+    feed_xml_filepath = f"{feeds_filepath}/{feed_id}.xml"
+    feed_toml_filepath = f"{feeds_filepath}/{feed_id}.toml"
+
+    config = FeedConfig(feed_toml_filepath)
+
+    html_source = get_html(config.url)
+
+    extracted_html = parse_html_via_patterns(
+        html_source,
+        config.global_search_pattern,
+        config.item_search_pattern
+    )
+
+    # Convert the html into a list of named tuples
+    feed_entries = create_feed_entries_from_html(
+        extracted_html,
+        config.item_title_position,
+        config.item_link_position,
+        config.item_content_position
+    )
+
+    # Create a dict to pass to the template to preview the feed
+    feed_preview = {
+        'title': config.feed_title,
+        'link': config.feed_link,
+        'subtitle': config.feed_description,
+        'entries': feed_entries
+    }
+
+    return render_template('feed.html', feed=feed_preview, feed_id=feed_id)
 
 
 # todo: remove?
@@ -61,24 +137,12 @@ def step_1():
         return f'<p>Error: URL is required.</p>'
     logger.debug(f"/get_html: {url=}")
 
-    try:
-        response = requests.get(url)
-        response.raise_for_status()
+    html_source = get_html(url)
 
-        html_source = response.content.decode('utf-8')
-
-        cleaned_html = nh3.clean(html=html_source)
-
-        if htmx:
-            return render_template('step_2_define_extraction_rules_htmx.html', html_source=cleaned_html)
-        else:
-            return render_template('step_2_define_extraction_rules.html', html_source=cleaned_html, url=url)
-    except requests.exceptions.ConnectionError as error:
-        logger.error(f"{error=}")
-        return '<p>Error: Invalid URL.</p>'
-    except requests.exceptions.RequestException as error:
-        logger.error(f"{error=}")
-        return '<p>Error: {error}</p>'
+    if htmx:
+        return render_template('step_2_define_extraction_rules_htmx.html', html_source=html_source)
+    else:
+        return render_template('step_2_define_extraction_rules.html', html_source=html_source, url=url)
 
 
 @app.route('/extract_html', methods=['POST'])
@@ -178,7 +242,7 @@ def step_3():
     feed_toml_filepath = f"{feeds_filepath}/{feed_id}.toml"
 
     # Save values to a toml file to regenerate feed in the future
-    toml_data = {
+    config = {
         'url': url,
         'global_search_pattern': global_search_pattern,
         'item_search_pattern': item_search_pattern,
@@ -187,10 +251,11 @@ def step_3():
         'feed_description': feed_description,
         'item_title_position': item_title_position,
         'item_link_position': item_link_position,
-        'item_content_position': item_content_position
+        'item_content_position': item_content_position,
+        'feed_type': feed_type
     }
     with open(feed_toml_filepath, 'w') as file:
-        toml.dump(toml_data, file)
+        toml.dump(config, file)
 
     # Create the feed
     feed = generate_feed(
@@ -203,13 +268,9 @@ def step_3():
     add_entries_to_feed(feed, feed_entries)
 
     if feed_type == 'atom':
-        # Get the ATOM feed as string
-        # atomfeed = feed.atom_str(pretty=True)
         # Write the ATOM feed to a file
         feed.atom_file(feed_xml_filepath)
     elif feed_type == 'rss':
-        # Get the RSS feed as string
-        # rssfeed = feed.rss_str(pretty=True)
         # Write the RSS feed to a file
         feed.rss_file(feed_xml_filepath)
     else:
@@ -233,7 +294,23 @@ def step_3():
         return render_template('step_4_get_rss_feed.html', feed=feed_preview, feed_id=feed_id, extracted_html=extracted_html, html_source=html_source, url=url)
 
 
-def parse_html_via_patterns(html_source: str, global_search_pattern: str, item_search_pattern: str):
+def get_html(url: str):
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+
+        html_source = response.content.decode('utf-8')
+
+        return nh3.clean(html=html_source)
+    except requests.exceptions.ConnectionError as error:
+        logger.error(f"{error=}")
+        return '<p>Error: Invalid URL.</p>'
+    except requests.exceptions.RequestException as error:
+        logger.error(f"{error=}")
+        return '<p>Error: {error}</p>'
+
+
+def parse_html_via_patterns(html_source: str, global_search_pattern: str, item_search_pattern: str) -> dict[int, list]:
     translation_table = str.maketrans("", "", '{}*%"=<>/')
 
     elements = BeautifulSoup(html_source, 'html.parser')
