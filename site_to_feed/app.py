@@ -89,7 +89,7 @@ def feeds(feed_id):
 
 
 @app.route('/feeds/<path:feed_id>')
-def edit_feed(feed_id):
+def view_feed(feed_id):
     feeds_filepath = "static/feeds"
     feed_xml_filepath = f"{feeds_filepath}/{feed_id}.xml"
     feed_toml_filepath = f"{feeds_filepath}/{feed_id}.toml"
