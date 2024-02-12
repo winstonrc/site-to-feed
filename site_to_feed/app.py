@@ -2,6 +2,7 @@ import ast
 import logging
 from bs4.element import DEFAULT_OUTPUT_ENCODING
 import nh3
+import os
 import re
 import requests
 import toml
@@ -10,7 +11,7 @@ import uuid
 from bs4 import BeautifulSoup
 from collections import namedtuple
 from feedgen.feed import FeedGenerator
-from flask import Flask, abort, render_template, request, send_from_directory
+from flask import Flask, abort, make_response, redirect, render_template, request, send_from_directory, url_for
 from flask_htmx import HTMX
 
 
@@ -29,6 +30,7 @@ FeedEntry = namedtuple('FeedEntry', ['title', 'link', 'content'])
 
 class FeedConfig:
     def __init__(self, filepath):
+        self.filepath = filepath
         with open(filepath, 'r') as file:
             self._data = toml.load(file)
 
@@ -36,41 +38,85 @@ class FeedConfig:
     def url(self) -> str:
         return self._data['url']
 
+    @url.setter
+    def url(self, value: str):
+        self._data['url'] = value
+
     @property
     def global_search_pattern(self) -> str:
         return self._data['global_search_pattern']
+
+    @global_search_pattern.setter
+    def global_search_pattern(self, value: str):
+        self._data['global_search_pattern'] = value
 
     @property
     def item_search_pattern(self) -> str:
         return self._data['item_search_pattern']
 
+    @item_search_pattern.setter
+    def item_search_pattern(self, value: str):
+        self._data['item_search_pattern'] = value
+
     @property
     def feed_title(self) -> str:
         return self._data['feed_title']
+
+    @feed_title.setter
+    def feed_title(self, value: str):
+        self._data['feed_title'] = value
 
     @property
     def feed_link(self) -> str:
         return self._data['feed_link']
 
+    @feed_link.setter
+    def feed_link(self, value: str):
+        self._data['feed_link'] = value
+
     @property
     def feed_description(self) -> str:
         return self._data['feed_description']
+
+    @feed_description.setter
+    def feed_description(self, value: str):
+        self._data['feed_description'] = value
 
     @property
     def item_title_position(self) -> int:
         return int(self._data['item_title_position'])
 
+    @item_title_position.setter
+    def item_title_position(self, value: int):
+        self._data['item_title_position'] = value
+
     @property
     def item_link_position(self) -> int:
         return int(self._data['item_link_position'])
+
+    @item_link_position.setter
+    def item_link_position(self, value: int):
+        self._data['item_link_position'] = value
 
     @property
     def item_content_position(self) -> int:
         return int(self._data['item_content_position'])
 
+    @item_content_position.setter
+    def item_content_position(self, value: int):
+        self._data['item_content_position'] = value
+
     @property
     def feed_type(self) -> str:
         return self._data['feed_type']
+
+    @feed_type.setter
+    def feed_type(self, value: str):
+        self._data['feed_type'] = value
+
+    def save(self):
+        with open(self.filepath, 'w') as file:
+            toml.dump(self._data, file)
 
 
 @app.route('/')
@@ -93,6 +139,10 @@ def view_feed(feed_id):
     feeds_filepath = "static/feeds"
     feed_xml_filepath = f"{feeds_filepath}/{feed_id}.xml"
     feed_toml_filepath = f"{feeds_filepath}/{feed_id}.toml"
+
+    if not os.path.exists(feed_xml_filepath) or not os.path.exists(feed_toml_filepath):
+        # If the files don't exist, issue a 404 error
+        abort(404)
 
     config = FeedConfig(feed_toml_filepath)
 
@@ -123,11 +173,128 @@ def view_feed(feed_id):
     return render_template('feed.html', feed=feed_preview, feed_id=feed_id)
 
 
+@app.route('/feeds/<path:feed_id>', methods=['POST'])
+def edit_feed(feed_id):
+    feeds_filepath = "static/feeds"
+    feed_xml_filepath = f"{feeds_filepath}/{feed_id}.xml"
+    feed_toml_filepath = f"{feeds_filepath}/{feed_id}.toml"
+
+    config = FeedConfig(feed_toml_filepath)
+
+    feed_title = request.form.get('feed-title')
+    if feed_title:
+        config.feed_title = feed_title
+        config.save()
+
+    feed_link = request.form.get('feed-link')
+    if feed_link:
+        config.feed_link = feed_link
+        config.save()
+
+    feed_description = request.form.get('feed-description')
+    if feed_description:
+        config.feed_description = feed_description
+        config.save()
+
+    item_title_template = request.form.get('item-title-template')
+    if item_title_template:
+        config.item_title_position = convert_item_position_str_to_int(
+            item_title_template)
+        config.save()
+
+    item_link_template = request.form.get('item-link-template')
+    if item_link_template:
+        config.item_link_position = convert_item_position_str_to_int(
+            item_link_template)
+        config.save()
+
+    item_content_template = request.form.get('item-content-template')
+    if item_content_template:
+        config.item_content_position = convert_item_position_str_to_int(
+            item_content_template)
+        config.save()
+
+    extracted_html = request.form.get('extracted-html')
+    if not extracted_html:
+        return '<p>Error: Extracted HTML from step 2 is required.</p>'
+    # Convert extracted_html from a str back into a dict
+    extracted_html = ast.literal_eval(extracted_html)
+
+    # Create the feed
+    feed = generate_feed(
+        feed_id,
+        config.feed_title,
+        config.feed_link,
+        config.feed_description
+    )
+
+    # Convert the html into a list of named tuples
+    feed_entries = create_feed_entries_from_html(
+        extracted_html,
+        config.item_title_position,
+        config.item_link_position,
+        config.item_content_position
+    )
+
+    add_entries_to_feed(feed, feed_entries)
+
+    if config.feed_type == 'atom':
+        # Write the ATOM feed to a file
+        feed.atom_file(feed_xml_filepath)
+    elif config.feed_type == 'rss':
+        # Write the RSS feed to a file
+        feed.rss_file(feed_xml_filepath)
+    else:
+        return '<p>Error: Feed type is required.</p>'
+
+    # Create a dict to pass to the template to preview the feed
+    feed_preview = {
+        'title': feed_title,
+        'link': feed_link,
+        'subtitle': feed_description,
+        'entries': feed_entries
+    }
+
+    if htmx:
+        response = make_response(url_for('view_feed', feed_id=feed_id), 200)
+        response.headers['HX-Refresh'] = "true"
+        return response
+    else:
+        return redirect(url_for('view_feed', feed_id=feed_id))
+
+
+@app.route('/feeds/<path:feed_id>/delete', methods=['POST', 'DELETE'])
+def delete_feed(feed_id):
+    feeds_filepath = "static/feeds"
+    feed_xml_filepath = f"{feeds_filepath}/{feed_id}.xml"
+    feed_toml_filepath = f"{feeds_filepath}/{feed_id}.toml"
+
+    if os.path.exists(feed_xml_filepath) or os.path.exists(feed_toml_filepath):
+        if os.path.exists(feed_xml_filepath):
+            os.remove(feed_xml_filepath)
+        else:
+            logger.error('Feed XML file does not exist.')
+
+        if os.path.exists(feed_toml_filepath):
+            os.remove(feed_toml_filepath)
+        else:
+            logger.error('Feed TOML file does not exist.')
+    else:
+        return '<p>Error: Feed file does not exist.</p>'
+
+    if htmx:
+        response = make_response(render_template('index.html'), 200)
+        response.headers['HX-Redirect'] = url_for('index')
+        return response
+    else:
+        return redirect(url_for('index'))
+
+
 @app.route('/get_html_source', methods=['GET'])
 def step_1():
     url = request.args.get('url')
     if not url:
-        return f'<p>Error: URL is required.</p>'
+        return '<p>Error: URL is required.</p>'
     logger.debug(f"/get_html: {url=}")
 
     html_source = get_html(url)
@@ -220,6 +387,20 @@ def step_3():
     if not url:
         return f'<p>Error: URL from step 1 is required.</p>'
 
+    # Create a unique id, which is required by ATOM
+    feed_id = str(uuid.uuid4()).replace('-', '')
+    feeds_filepath = "static/feeds"
+    feed_xml_filepath = f"{feeds_filepath}/{feed_id}.xml"
+    feed_toml_filepath = f"{feeds_filepath}/{feed_id}.toml"
+
+    # Create the feed
+    feed = generate_feed(
+        feed_id,
+        feed_title,
+        feed_link,
+        feed_description
+    )
+
     # Convert the html into a list of named tuples
     feed_entries = create_feed_entries_from_html(
         extracted_html,
@@ -228,11 +409,16 @@ def step_3():
         item_content_position
     )
 
-    # Create a unique id, which is required by ATOM
-    feed_id = str(uuid.uuid4()).replace('-', '')
-    feeds_filepath = "static/feeds"
-    feed_xml_filepath = f"{feeds_filepath}/{feed_id}.xml"
-    feed_toml_filepath = f"{feeds_filepath}/{feed_id}.toml"
+    add_entries_to_feed(feed, feed_entries)
+
+    if feed_type == 'atom':
+        # Write the ATOM feed to a file
+        feed.atom_file(feed_xml_filepath)
+    elif feed_type == 'rss':
+        # Write the RSS feed to a file
+        feed.rss_file(feed_xml_filepath)
+    else:
+        return '<p>Error: Feed type is required.</p>'
 
     # Save values to a toml file to regenerate feed in the future
     config = {
@@ -249,25 +435,6 @@ def step_3():
     }
     with open(feed_toml_filepath, 'w') as file:
         toml.dump(config, file)
-
-    # Create the feed
-    feed = generate_feed(
-        feed_id,
-        feed_title,
-        feed_link,
-        feed_description
-    )
-
-    add_entries_to_feed(feed, feed_entries)
-
-    if feed_type == 'atom':
-        # Write the ATOM feed to a file
-        feed.atom_file(feed_xml_filepath)
-    elif feed_type == 'rss':
-        # Write the RSS feed to a file
-        feed.rss_file(feed_xml_filepath)
-    else:
-        return '<p>Error: Feed type is required.</p>'
 
     # Create a dict to pass to the template to preview the feed
     feed_preview = {
@@ -320,6 +487,9 @@ def parse_html_via_patterns(html_source: str, global_search_pattern: str, item_s
     # Pop and format the first line, which is used for the initial filtering
     initial_parameter = search_parameters.pop(0).translate(translation_table)
 
+    # pyright issues a warning about find_all being an unknown member
+    # of a NavigableString.
+    # It seems to be working correctly, so I'm ignoring the warning.
     elements = elements.find_all(initial_parameter)
     logger.debug(f"{len(elements)=}\n{elements=}")
 
@@ -358,7 +528,8 @@ def parse_html_via_patterns(html_source: str, global_search_pattern: str, item_s
                 transformed_element.append(value)
             except Exception as error:
                 logger.error(f"{error=}")
-                return '<p>Error: Error parsing elements. Please go back and check your query again.</p>'
+                abort(
+                    500, '<p>Error: Error parsing elements. Please go back and check your query again.</p>')
             extracted_html[i] = transformed_element
 
     return extracted_html
@@ -417,7 +588,7 @@ def convert_item_position_str_to_int(number_str: str) -> int:
     if match:
         return int(match.group(1)) - 1
     else:
-        return '<p>Error: A string of an int is required.</p>'
+        abort(500, '<p>Error: A string of an int is required.</p>')
 
 
 if __name__ == '__main__':

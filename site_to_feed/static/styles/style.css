@@ -73,6 +73,10 @@ textarea {
   width: 100%;
 }
 
+.edit-feed-buttons {
+  display: inline-block;
+}
+
 .inline-code {
   font-family: monospace;
   background: var(--code-background-color);

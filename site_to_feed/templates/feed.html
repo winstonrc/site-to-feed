@@ -1,4 +1,8 @@
-{% extends 'layout.html' %} {% block content %}
-<h2>Feed</h2>
-{% include 'partials/feed_preview.html' %} {% include 'partials/feed_links.html'
-%} {% include 'partials/edit_feed.html' %} {% endblock %}
+{% extends 'layout.html' %} {% block content %} {% include
+'partials/feed_links.html' %} {% include 'partials/feed_preview.html' %}
+
+<h2>Edit feed</h2>
+{% include 'partials/edit_feed.html' %}
+
+<h2>Delete feed</h2>
+{% include 'partials/delete_feed.html' %} {% endblock %}
