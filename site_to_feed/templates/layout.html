@@ -9,7 +9,7 @@
       type="text/css"
       href="{{ url_for('static', filename='/styles/style.css') }}"
     />
-    <script src="static/js/htmx.min.js"></script>
+    <script src="{{ url_for('static', filename='/js/htmx.min.js') }}"></script>
     <script>
       function setUrlInSourceCodeElement() {
         let url = document.getElementById("url");
