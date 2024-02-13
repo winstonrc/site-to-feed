@@ -18,6 +18,9 @@ from flask_htmx import HTMX
 app = Flask(__name__)
 htmx = HTMX(app)
 
+DATA_DIRECTORY = '/data/feeds/'
+os.makedirs(DATA_DIRECTORY, exist_ok=True)
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
@@ -136,9 +139,8 @@ def feed_file(feed_id):
 
 @app.route('/feeds/<path:feed_id>', methods=['GET'])
 def view_feed(feed_id):
-    feeds_filepath = "static/feeds"
-    feed_xml_filepath = f"{feeds_filepath}/{feed_id}.xml"
-    feed_toml_filepath = f"{feeds_filepath}/{feed_id}.toml"
+    feed_xml_filepath = f"{DATA_DIRECTORY}/{feed_id}.xml"
+    feed_toml_filepath = f"{DATA_DIRECTORY}/{feed_id}.toml"
 
     if not os.path.exists(feed_xml_filepath) or not os.path.exists(feed_toml_filepath):
         # If the files don't exist, issue a 404 error
@@ -182,9 +184,8 @@ def view_feed(feed_id):
 
 @app.route('/feeds/<path:feed_id>', methods=['POST'])
 def edit_feed(feed_id):
-    feeds_filepath = "static/feeds"
-    feed_xml_filepath = f"{feeds_filepath}/{feed_id}.xml"
-    feed_toml_filepath = f"{feeds_filepath}/{feed_id}.toml"
+    feed_xml_filepath = f"{DATA_DIRECTORY}/{feed_id}.xml"
+    feed_toml_filepath = f"{DATA_DIRECTORY}/{feed_id}.toml"
 
     if not os.path.exists(feed_xml_filepath) or not os.path.exists(feed_toml_filepath):
         # If the files don't exist, issue a 404 error
@@ -255,9 +256,8 @@ def edit_feed(feed_id):
 
 @app.route('/feeds/<path:feed_id>/delete', methods=['POST', 'DELETE'])
 def delete_feed(feed_id):
-    feeds_filepath = "static/feeds"
-    feed_xml_filepath = f"{feeds_filepath}/{feed_id}.xml"
-    feed_toml_filepath = f"{feeds_filepath}/{feed_id}.toml"
+    feed_xml_filepath = f"{DATA_DIRECTORY}/{feed_id}.xml"
+    feed_toml_filepath = f"{DATA_DIRECTORY}/{feed_id}.toml"
 
     if os.path.exists(feed_xml_filepath) or os.path.exists(feed_toml_filepath):
         if os.path.exists(feed_xml_filepath):
@@ -386,9 +386,8 @@ def step_3():
     if not feed_id:
         return f'<p>Error: feed_id from step 2 is required.</p>'
 
-    feeds_filepath = "static/feeds"
-    feed_xml_filepath = f"{feeds_filepath}/{feed_id}.xml"
-    feed_toml_filepath = f"{feeds_filepath}/{feed_id}.toml"
+    feed_xml_filepath = f"{DATA_DIRECTORY}/{feed_id}.xml"
+    feed_toml_filepath = f"{DATA_DIRECTORY}/{feed_id}.toml"
 
     # Create the feed
     feed = generate_feed(
