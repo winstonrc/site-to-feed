@@ -129,7 +129,7 @@ def documentation():
     return render_template('documentation.html')
 
 
-@app.route('/feeds/<path:feed_id>.xml')
+@app.route('/feeds/<path:feed_id>.xml', methods=['GET'])
 def feed_file(feed_id):
     return send_from_directory('static/feeds', f"{feed_id}.xml")
 
@@ -319,10 +319,16 @@ def step_2():
         item_search_pattern
     )
 
+    # Create a unique id, which is required by ATOM.
+    # Placing this here as an input for the step 3 form so only 1 feed
+    # is generated if the user hits "Generate feed" to submit the form
+    # multiple times.
+    feed_id = str(uuid.uuid4()).replace('-', '')
+
     if htmx:
-        return render_template('step_3_define_output_format_htmx.html', extracted_html=extracted_html, global_search_pattern=global_search_pattern, item_search_pattern=item_search_pattern, url=url)
+        return render_template('step_3_define_output_format_htmx.html', extracted_html=extracted_html, global_search_pattern=global_search_pattern, item_search_pattern=item_search_pattern, feed_id=feed_id, url=url)
     else:
-        return render_template('step_3_define_output_format.html', extracted_html=extracted_html, global_search_pattern=global_search_pattern, item_search_pattern=item_search_pattern, html_source=html_source, url=url)
+        return render_template('step_3_define_output_format.html', extracted_html=extracted_html, global_search_pattern=global_search_pattern, item_search_pattern=item_search_pattern, feed_id=feed_id, html_source=html_source, url=url)
 
 
 @app.route('/format_feed_output', methods=['POST'])
@@ -339,21 +345,20 @@ def step_3():
     if not feed_description:
         return '<p>Error: A string is required for Feed Description.</p>'
 
-    item_title_template = request.form.get('item-title-template')
-    if not item_title_template:
-        return '<p>Error: A string is required for Item Title Template.</p>'
-    item_title_position = convert_item_position_str_to_int(item_title_template)
+    item_title_position = request.form.get('item-title-position')
+    if not item_title_position:
+        return '<p>Error: A number is required for Item Title Position.</p>'
+    item_title_position = int(item_title_position)
 
-    item_link_template = request.form.get('item-link-template')
-    if not item_link_template:
-        return '<p>Error: A string is required for Item Link Template.</p>'
-    item_link_position = convert_item_position_str_to_int(item_link_template)
+    item_link_position = request.form.get('item-link-position')
+    if not item_link_position:
+        return '<p>Error: A number is required for Item Link Position.</p>'
+    item_link_position = int(item_link_position)
 
-    item_content_template = request.form.get('item-content-template')
-    if not item_content_template:
-        return '<p>Error: A string is required for Item Content Template.</p>'
-    item_content_position = convert_item_position_str_to_int(
-        item_content_template)
+    item_content_position = request.form.get('item-content-position')
+    if not item_content_position:
+        return '<p>Error: A number is required for Item Content Position.</p>'
+    item_content_position = int(item_content_position)
 
     feed_type = request.form.get('feed-type')
     if not feed_type:
@@ -377,8 +382,10 @@ def step_3():
     if not url:
         return f'<p>Error: URL from step 1 is required.</p>'
 
-    # Create a unique id, which is required by ATOM
-    feed_id = str(uuid.uuid4()).replace('-', '')
+    feed_id = request.form.get('feed-id')
+    if not feed_id:
+        return f'<p>Error: feed_id from step 2 is required.</p>'
+
     feeds_filepath = "static/feeds"
     feed_xml_filepath = f"{feeds_filepath}/{feed_id}.xml"
     feed_toml_filepath = f"{feeds_filepath}/{feed_id}.toml"
@@ -571,14 +578,6 @@ def create_feed_entries_from_html(html: dict, item_title_position: int, item_lin
         )
         feed_entries.append(entry)
     return feed_entries
-
-
-def convert_item_position_str_to_int(number_str: str) -> int:
-    match = re.search(r'{%(\d+)}', number_str)
-    if match:
-        return int(match.group(1))
-    else:
-        abort(500, '<p>Error: A string of an int is required.</p>')
 
 
 if __name__ == '__main__':

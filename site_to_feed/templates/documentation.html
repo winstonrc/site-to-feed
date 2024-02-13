@@ -33,9 +33,15 @@
 </p>
 
 <p>
-  It's generally recommended to use
+  The default value of
   <span class="inline-code">&#123;%&#125;</span>
-  to select the entire HTML source.
+  selects the entire HTML source.
+</p>
+
+<p>
+  Alternatively, using the value
+  <span class="inline-code">&lt;article&gt;</span> would only select the first
+  <span class="inline-code">&lt;article&gt;</span> element in the HTML.
 </p>
 
 <h3>Item Search Pattern</h3>
@@ -99,46 +105,72 @@
 >&#123;%&#125;
 </code></pre>
 
-<p>This uses the entire HTML document.</p>
-
-<p>Or it could be:</p>
-
-<pre><code
->&lt;article&gt;
-</code></pre>
-
-<p>
-  This would look for the first
-  <span class="inline-code">&lt;article&gt;</span> in the HTML document.
-</p>
+<p>This selects the entire HTML document.</p>
 
 <p>The Item Search Pattern could be:</p>
 
 <pre><code
->&lt;article&gt;&#123;*&#125;
-title="&#123;%&#125;"&#123;*&#125;
-href="&#123;%&#125;"&#123;*&#125;
-&lt;p&gt;&#123;%&#125;&lt;/p&gt;
+>&lt;article&gt;
+title
+href
+&lt;p&gt;
 </code></pre>
 
-<p>Or it could be:</p>
+<details>
+  <summary>Alternate format</summary>
+  <p>
+    You can simplify the pattern by removing the
+    <span class="inline-code">&lt;&gt;</span> tags like so:
+  </p>
+
+  <pre><code
+>article
+title
+href
+p
+</code></pre>
+</details>
+
+<p>
+  Or if no <span class="inline-code">title</span> attribute is provided for the
+  <span class="inline-code">&lt;a&gt;</span> element, you could extract the text
+  contained between the
+  <span class="inline-code">&lt;a&gt;&lt;/a&gt;</span> elements with:
+</p>
 
 <pre><code
->&lt;article&gt;&#123;*&#125;
-&lt;a&gt;&#123;*&#125;
-href="&#123;%&#125;"&#123;*&#125;
-&lt;p&gt;&#123;%&#125;&lt;/p&gt;
+>&lt;article&gt
+&lt;a&gt;
+href
+&lt;p&gt;
 </code></pre>
 
-Every website implements its HTML a bit differently, so getting the Item Search
-Pattern correct is crucial!
+<details>
+  <summary>Alternate format</summary>
+  <p>
+    You can simplify the pattern by removing the
+    <span class="inline-code">&lt;&gt;</span> tags like so:
+  </p>
+
+  <pre><code
+>article
+a
+href
+p
+</code></pre>
+</details>
+
+<p>
+  Every website implements its HTML a bit differently, so getting the Item
+  Search Pattern correct is crucial!
+</p>
 
 <p>
   This pattern would look for HTML elements in the
   <span class="inline-code">&lt;article&gt;</span> element and assign the title
-  to <span class="inline-code">&#123;%1&#125;</span>, the link to
-  <span class="inline-code">&#123;%2&#125;</span>, and the content to
-  <span class="inline-code">&#123;%3&#125;</span>. The assigned items are
+  to <span class="inline-code">&#123;1&#125;</span>, the link to
+  <span class="inline-code">&#123;2&#125;</span>, and the content to
+  <span class="inline-code">&#123;3&#125;</span>. The assigned items are
   numbered in the order they are matched in the pattern, and the numbering is
   used for step 3.
 </p>
@@ -164,22 +196,24 @@ Pattern correct is crucial!
 <h3>RSS item properties</h3>
 
 <p>
-  <strong>Item Title Template:</strong> Provide the corresponding value from the
-  feed preview in step 2 (e.g. <span class="inline-code">&#123;%1&#125;</span>)
-  to assign as the Title for each item in the pattern.
+  <strong>Item Title Position:</strong> Provide the corresponding value within
+  the <span class="inline-code">&#123;&#125;</span> tags from the generated feed
+  preview in step 2 (e.g. <span class="inline-code">1</span>) to assign as the
+  Title for each item in the pattern.
 </p>
 
 <p>
-  <strong>Item Link Template:</strong> Provide the corresponding value from the
-  feed preview in step 2 (e.g. <span class="inline-code">&#123;%2&#125;</span>)
-  to assign as the Link (URL) for each item in the pattern.
+  <strong>Item Link Position:</strong> Provide the corresponding value within
+  the <span class="inline-code">&#123;&#125;</span> tags from the generated feed
+  preview in step 2 (e.g. <span class="inline-code">2</span>) to assign as the
+  Link (URL) for each item in the pattern.
 </p>
 
 <p>
-  <strong>Item Content Template:</strong> Provide the corresponding value from
-  the feed preview in step 2 (e.g.
-  <span class="inline-code">&#123;%3&#125;</span>) to assign as the Content for
-  each item in the pattern.
+  <strong>Item Content Position:</strong> Provide the corresponding value within
+  the <span class="inline-code">&#123;&#125;</span> tags from the generated feed
+  preview in step 2 (e.g. <span class="inline-code">3</span>) to assign as the
+  Content for each item in the pattern.
 </p>
 
 <h2>Step 4. Get your feed</h2>
@@ -190,13 +224,12 @@ Pattern correct is crucial!
   <strong>Edit URL:</strong> Use this URL to edit or delete the feed.
   <br /><br />
   <strong>Note:</strong> The Edit URL follows a pattern:
-  <span class="inline-code">/feed.html?id=&lt;feed_id&gt;</span> where
+  <span class="inline-code">/feeds/&lt;feed_id&gt;</span> where
   <span class="inline-code">&lt;feed_id&gt;</span> is replaced by your actual
   feed ID.
   <br />
   If you ever want to edit or delete your feed in the future, extract the
   <span class="inline-code">&lt;feed_id&gt;</span> from the feed URL (everything
-  besides the <span class="inline-code">.xml</span> extension at the end) to
-  pass to the <span class="inline-code">?id=</span> parameter.
+  preceding the <span class="inline-code">.xml</span> extension at the end).
 </p>
 {% endblock %}

@@ -1,5 +1,13 @@
 <h3>Feed properties</h3>
 
+<details>
+  <summary>Instructions</summary>
+  <p>
+    These values will show up in your feed reader. Assign these values as
+    whatever you want.
+  </p>
+</details>
+
 <form
   id="output-format"
   action="/format_feed_output"
@@ -14,34 +22,52 @@
   <input type="text" id="feed-title" name="feed-title" required />
 
   <label for="feed-link">Feed Link:</label>
-  <input type="url" id="feed-link" name="feed-link" required />
+  <input
+    type="url"
+    id="feed-link"
+    name="feed-link"
+    value="{{ request.args.get('url') or url }}"
+    required
+  />
 
   <label for="feed-description">Feed Description:</label>
   <input type="text" id="feed-description" name="feed-description" required />
 
   <h3>Item properties</h3>
 
-  <label for="item-title-template">Item Title Template:</label>
+  <details>
+    <summary>Instructions</summary>
+    <p>
+      Define which position the <em>title</em>, <em>link</em> &#40;URL&#41;, and
+      <em>content</em> should be in for each item from the feed preview above.
+      <br /><br />
+      <strong>Example:</strong> If
+      <span class="inline-code">&#123;1&#125;</span> = the item title, then set
+      the value for Item Title Position to <span class="inline-code">1</span>.
+    </p>
+  </details>
+
+  <label for="item-title-position">Item Title Position:</label>
   <input
-    type="text"
-    id="item-title-template"
-    name="item-title-template"
+    type="number"
+    id="item-title-position"
+    name="item-title-position"
     required
   />
 
-  <label for="item-link-template">Item Link Template:</label>
+  <label for="item-link-position">Item Link Position:</label>
   <input
-    type="text"
-    id="item-link-template"
-    name="item-link-template"
+    type="number"
+    id="item-link-position"
+    name="item-link-position"
     required
   />
 
-  <label for="item-content-template">Item Content Template:</label>
+  <label for="item-content-position">Item Content Position:</label>
   <input
-    type="text"
-    id="item-content-template"
-    name="item-content-template"
+    type="number"
+    id="item-content-position"
+    name="item-content-position"
     required
   />
   <br />
@@ -101,6 +127,8 @@
     value="{{ item_search_pattern }}"
     required
   />
+
+  <input type="hidden" name="feed-id" value="{{ feed_id }}" required />
   <br />
   <button type="submit">Generate feed</button>
 </form>
