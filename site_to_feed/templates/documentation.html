@@ -99,47 +99,16 @@
 &lt;/article&gt;
 </code></pre>
 
-<p>The Global Search Pattern could be:</p>
+<p>The Global Search Pattern to select the entire HTML document could be:</p>
 
 <pre><code
 >&#123;%&#125;
 </code></pre>
 
-<p>This selects the entire HTML document.</p>
-
 <p>The Item Search Pattern could be:</p>
 
 <pre><code
 >&lt;article&gt;
-title
-href
-&lt;p&gt;
-</code></pre>
-
-<details>
-  <summary>Alternate format</summary>
-  <p>
-    You can simplify the pattern by removing the
-    <span class="inline-code">&lt;&gt;</span> tags like so:
-  </p>
-
-  <pre><code
->article
-title
-href
-p
-</code></pre>
-</details>
-
-<p>
-  Or if no <span class="inline-code">title</span> attribute is provided for the
-  <span class="inline-code">&lt;a&gt;</span> element, you could extract the text
-  contained between the
-  <span class="inline-code">&lt;a&gt;&lt;/a&gt;</span> elements with:
-</p>
-
-<pre><code
->&lt;article&gt
 &lt;a&gt;
 href
 &lt;p&gt;
