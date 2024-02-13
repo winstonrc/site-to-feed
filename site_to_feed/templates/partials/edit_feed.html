@@ -8,28 +8,29 @@
   autocomplete="off"
   hx-post="{{ url_for('edit_feed', feed_id=feed_id) }}"
   hx-trigger="submit"
+  hx-target="body"
+  hx-swap="outerHTML"
 >
   <h3>Feed properties</h3>
 
   <label for="feed-title">Feed Title:</label>
-  <input type="text" id="feed-title" name="feed-title" />
+  <input
+    type="text"
+    id="feed-title"
+    name="feed-title"
+    value="{{ feed.title }}"
+  />
 
   <label for="feed-link">Feed Link:</label>
-  <input type="url" id="feed-link" name="feed-link" />
+  <input type="url" id="feed-link" name="feed-link" value="{{ feed.link }}" />
 
   <label for="feed-description">Feed Description:</label>
-  <input type="text" id="feed-description" name="feed-description" />
-
-  <h3>Item properties</h3>
-
-  <label for="item-title-template">Item Title Template:</label>
-  <input type="text" id="item-title-template" name="item-title-template" />
-
-  <label for="item-link-template">Item Link Template:</label>
-  <input type="text" id="item-link-template" name="item-link-template" />
-
-  <label for="item-content-template">Item Content Template:</label>
-  <input type="text" id="item-content-template" name="item-content-template" />
+  <input
+    type="text"
+    id="feed-description"
+    name="feed-description"
+    value="{{ feed.subtitle }}"
+  />
 
   <label>
     <button type="submit">Update</button>

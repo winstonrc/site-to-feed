@@ -130,7 +130,7 @@ def documentation():
 
 
 @app.route('/feeds/<path:feed_id>.xml')
-def feeds(feed_id):
+def feed_file(feed_id):
     return send_from_directory('static/feeds', f"{feed_id}.xml")
 
 
@@ -170,7 +170,14 @@ def view_feed(feed_id):
         'entries': feed_entries
     }
 
-    return render_template('feed.html', feed=feed_preview, feed_id=feed_id)
+    return render_template(
+        'feed.html',
+        feed=feed_preview,
+        feed_id=feed_id,
+        item_title_position=config.item_title_position,
+        item_link_position=config.item_link_position,
+        item_content_position=config.item_content_position
+    )
 
 
 @app.route('/feeds/<path:feed_id>', methods=['POST'])
@@ -178,6 +185,10 @@ def edit_feed(feed_id):
     feeds_filepath = "static/feeds"
     feed_xml_filepath = f"{feeds_filepath}/{feed_id}.xml"
     feed_toml_filepath = f"{feeds_filepath}/{feed_id}.toml"
+
+    if not os.path.exists(feed_xml_filepath) or not os.path.exists(feed_toml_filepath):
+        # If the files don't exist, issue a 404 error
+        abort(404)
 
     config = FeedConfig(feed_toml_filepath)
 
@@ -196,29 +207,13 @@ def edit_feed(feed_id):
         config.feed_description = feed_description
         config.save()
 
-    item_title_template = request.form.get('item-title-template')
-    if item_title_template:
-        config.item_title_position = convert_item_position_str_to_int(
-            item_title_template)
-        config.save()
+    html_source = get_html(config.url)
 
-    item_link_template = request.form.get('item-link-template')
-    if item_link_template:
-        config.item_link_position = convert_item_position_str_to_int(
-            item_link_template)
-        config.save()
-
-    item_content_template = request.form.get('item-content-template')
-    if item_content_template:
-        config.item_content_position = convert_item_position_str_to_int(
-            item_content_template)
-        config.save()
-
-    extracted_html = request.form.get('extracted-html')
-    if not extracted_html:
-        return '<p>Error: Extracted HTML from step 2 is required.</p>'
-    # Convert extracted_html from a str back into a dict
-    extracted_html = ast.literal_eval(extracted_html)
+    extracted_html = parse_html_via_patterns(
+        html_source,
+        config.global_search_pattern,
+        config.item_search_pattern
+    )
 
     # Create the feed
     feed = generate_feed(
@@ -255,12 +250,7 @@ def edit_feed(feed_id):
         'entries': feed_entries
     }
 
-    if htmx:
-        response = make_response(url_for('view_feed', feed_id=feed_id), 200)
-        response.headers['HX-Refresh'] = "true"
-        return response
-    else:
-        return redirect(url_for('view_feed', feed_id=feed_id))
+    return render_template('feed.html', feed_id=feed_id, feed=feed_preview)
 
 
 @app.route('/feeds/<path:feed_id>/delete', methods=['POST', 'DELETE'])
@@ -575,9 +565,9 @@ def create_feed_entries_from_html(html: dict, item_title_position: int, item_lin
     feed_entries = []
     for key, values in html.items():
         entry = FeedEntry(
-            title=values[item_title_position],
-            link=values[item_link_position],
-            content=values[item_content_position]
+            title=values[item_title_position - 1],
+            link=values[item_link_position - 1],
+            content=values[item_content_position - 1]
         )
         feed_entries.append(entry)
     return feed_entries
@@ -586,7 +576,7 @@ def create_feed_entries_from_html(html: dict, item_title_position: int, item_lin
 def convert_item_position_str_to_int(number_str: str) -> int:
     match = re.search(r'{%(\d+)}', number_str)
     if match:
-        return int(match.group(1)) - 1
+        return int(match.group(1))
     else:
         abort(500, '<p>Error: A string of an int is required.</p>')
 
