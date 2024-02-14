@@ -8,5 +8,5 @@ A demo of this app can be found here: [https://site-to-feed.fly.dev/](https://si
 
 ## Usage
 
-Complete usage documentation can be located at the [/documentation](https://site-to-feed.fly.dev/documentation) route.
+Complete usage documentation can be located at the [documentation](https://site-to-feed.fly.dev/documentation) route.
 Brief instructions are provided in collapsed sections titled "Instructions" throughout the main page.
