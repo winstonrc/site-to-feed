@@ -134,7 +134,7 @@ def documentation():
 
 @app.route('/feeds/<path:feed_id>.xml', methods=['GET'])
 def feed_file(feed_id):
-    return send_from_directory('static/feeds', f"{feed_id}.xml")
+    return send_from_directory(DATA_DIRECTORY, f"{feed_id}.xml")
 
 
 @app.route('/feeds/<path:feed_id>', methods=['GET'])
