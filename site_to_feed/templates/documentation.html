@@ -28,8 +28,8 @@
 <h3>Global Search Pattern</h3>
 
 <p>
-  The goal of this search pattern is to define which part of the HTML document
-  you want to parse.
+  The goal of the global search pattern is to define which part of the HTML
+  document you want to parse.
 </p>
 
 <p>
@@ -39,49 +39,55 @@
 </p>
 
 <p>
-  Alternatively, using the value
-  <span class="inline-code">&lt;article&gt;</span> would only select the first
-  <span class="inline-code">&lt;article&gt;</span> element in the HTML.
+  Providing an HTML element such as
+  <span class="inline-code">&lt;ul&gt;</span> would only select the first
+  <span class="inline-code">&lt;ul&gt;</span> element in the HTML.
+</p>
+
+<p>
+  <strong>Tip:</strong> You don't have to actually wrap the HTML element in its
+  <span class="inline-code">&lt;&gt;</span> tag. For example, entering either
+  <span class="inline-code">&lt;ul&gt;</span> or
+  <span class="inline-code">ul</span> would work identically.
 </p>
 
 <h3>Item Search Pattern</h3>
 
 <p>
-  The goal of this search pattern is to retrieve the <em>title</em>,
+  The goal of the item search pattern is to retrieve the <em>title</em>,
   <em>link</em> &#40;URL&#41;, and <em>content</em>.
 </p>
 
-<p>Patterns generally contain the following elements:</p>
+<p>
+  The pattern should consist of the following 4 elements/attributes, each placed
+  on a newline:
+</p>
 
-<ul>
+<ol>
   <li>
-    <span class="inline-code">&lt;&gt;</span> – The opening tag of an HTML
-    element
+    the repeated <span class="inline-code">&lt;&gt;</span> elements to target
+    (e.g. <span class="inline-code">&lt;li&gt;</span>)
   </li>
   <li>
-    <span class="inline-code">&lt;/&gt;</span> – The closing tag of an HTML
-    element that matches the opening tag with an additional
-    <span class="inline-code">/</span> before the element name
+    the element that contains the title for the item (e.g.
+    <span class="inline-code">&lt;a&gt;</span>)
   </li>
   <li>
-    <span class="inline-code">&#123;%&#125;</span> – Defines the element to
-    assign the title, link, or content to
+    the attribute or element that contains the link for the item (e.g.
+    <span class="inline-code">href</span>, which is found within
+    <span class="inline-code">&lt;a&gt;</span>)
   </li>
   <li>
-    <span class="inline-code">&#123;*&#125;</span> – Indicates that the HTML
-    between the previous element and the next element can be ignored by the
-    pattern
+    the element that contains the content for the item (e.g.
+    <span class="inline-code">&lt;p&gt;</span>)
   </li>
-</ul>
+</ol>
 
 <p>
-  A properly formatted pattern should have three instances of
-  <span class="inline-code">&#123;%&#125;</span> for declaring the title, link,
-  and content. It should also have three instances of
-  <span class="inline-code">&#123;*&#125;</span> for declaring which parts of
-  the HTML to ignore between the initial opening tag
-  <span class="inline-code">&lt;&gt;</span> and the final closing
-  <span class="inline-code">&lt;/&gt;</span> tag.
+  <strong>Tip:</strong> You don't have to actually wrap the HTML elements in
+  their <span class="inline-code">&lt;&gt;</span> tags. For example, entering
+  either <span class="inline-code">&lt;a&gt;</span> or
+  <span class="inline-code">a</span> would work identically.
 </p>
 
 <h3>Example</h3>
