@@ -12,16 +12,19 @@
   <details>
     <summary>Instructions</summary>
     <p>
-      Define which part of the HTML source to apply the extraction pattern
-      to.<br />
-      This is handy if there's an HTML pattern that matches the Item Search
-      Pattern below that you do not want to be included.<br />
+      Define which part of the HTML source to apply the extraction pattern to.
       <br />
-      <strong>Tip:</strong> Enter
+      If a page has multiple html elements, and you only want to select the
+      first one, enter that here. For example, entering
+      <span class="inline-code">&lt;ul&gt;</span> would only select the first
+      <span class="inline-code">&lt;ul&gt;</span> element (and its nested
+      elements) on the page. <br /><br />
+      <strong>Tip:</strong> Use the default value of
       <span class="inline-code">&#123;&#37;&#125;</span>
       to select the entire HTML source.
     </p>
   </details>
+
   <input
     type="text"
     id="global-search-pattern"
@@ -29,23 +32,47 @@
     value="&#123;&#37;&#125;"
     required
   />
+
   <br /><br />
 
   <label for="item-search-pattern">Item Search Pattern:</label><br />
   <details>
     <summary>Instructions</summary>
     <p>
-      Define the HTML pattern to match that will form the individual listings in
-      the Feed.<br />
-      Use
-      <span class="inline-code">&#123;%&#125;</span> and
-      <span class="inline-code">&#123;*&#125;</span> for marking up the HTML
-      pattern.<br />
-      This pattern is applied to the HTML selected in the Global Search Pattern
-      above.<br />
-      <br />
-      <strong>Tip:</strong> Look for repeated patterns in the HTML tags that
-      wrap the elements you want to retrieve.
+      Define the repeated HTML pattern that matches the individual items in the
+      feed you want to include. This pattern is applied to the HTML filtered by
+      the Global Search Pattern above.
+    </p>
+
+    <p />
+
+    <p>Putting each rule on a new line, define:</p>
+
+    <ol>
+      <li>
+        the repeated <span class="inline-code">&lt;&gt;</span> elements to
+        target (e.g. <span class="inline-code">&lt;li&gt;</span>)
+      </li>
+      <li>
+        the element that contains the title for the item (e.g.
+        <span class="inline-code">&lt;a&gt;</span>)
+      </li>
+      <li>
+        the attribute or element that contains the link for the item (e.g.
+        <span class="inline-code">href</span>, which is found within
+        <span class="inline-code">&lt;a&gt;</span>)
+      </li>
+      <li>
+        the element that contains the content for the item (e.g.
+        <span class="inline-code">&lt;p&gt;</span>)
+      </li>
+    </ol>
+
+    <p>
+      <strong>Tip:</strong> You don't have to actually wrap the HTML elements in
+      their <span class="inline-code">&lt;&gt;</span> tags. For example,
+      entering either <span class="inline-code">&lt;a&gt;</span> or
+      <span class="inline-code">a</span> would both work identically.
     </p>
   </details>
 
