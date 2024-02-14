@@ -510,13 +510,6 @@ def parse_html_via_patterns(html_source: str, global_search_pattern: str, item_s
                             value = element.find('a').get(param)
                         else:
                             value = element.get(param)
-                    case 'title':
-                        if element.title:
-                            value = element.title.string
-                        elif element.find('a'):
-                            value = element.find('a').get(param)
-                        else:
-                            value = element.get(param)
                     case 'p':
                         value = element.p.get_text()
                     case _:
