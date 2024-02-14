@@ -386,9 +386,6 @@ def step_3():
     if not feed_id:
         return f'<p>Error: feed_id from step 2 is required.</p>'
 
-    feed_xml_filepath = f"{DATA_DIRECTORY}/{feed_id}.xml"
-    feed_toml_filepath = f"{DATA_DIRECTORY}/{feed_id}.toml"
-
     # Create the feed
     feed = generate_feed(
         feed_id,
@@ -407,12 +404,13 @@ def step_3():
 
     add_entries_to_feed(feed, feed_entries)
 
+    feed_filepath = f"{DATA_DIRECTORY}/{feed_id}"
     if feed_type == 'atom':
         # Write the ATOM feed to a file
-        feed.atom_file(feed_xml_filepath)
+        feed.atom_file(f"{feed_filepath}.xml")
     elif feed_type == 'rss':
         # Write the RSS feed to a file
-        feed.rss_file(feed_xml_filepath)
+        feed.rss_file(f"{feed_filepath}.xml")
     else:
         return '<p>Error: Feed type is required.</p>'
 
@@ -429,7 +427,7 @@ def step_3():
         'item_content_position': item_content_position,
         'feed_type': feed_type
     }
-    with open(feed_toml_filepath, 'w') as file:
+    with open(f"{feed_filepath}.toml", 'w') as file:
         toml.dump(config, file)
 
     # Create a dict to pass to the template to preview the feed
