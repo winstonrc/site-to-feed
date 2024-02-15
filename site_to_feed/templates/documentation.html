@@ -20,7 +20,7 @@
   >
   and the
   <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/a"
-    ><span class="inline-code">&lt;/a&gt;</span> &#40;anchor element&#41;</a
+    ><span class="inline-code">&lt;a&gt;</span> &#40;anchor element&#41;</a
   >
   is recommended.
 </p>
@@ -136,11 +136,6 @@ p
 </details>
 
 <p>
-  Every website implements its HTML a bit differently, so getting the Item
-  Search Pattern correct is crucial!
-</p>
-
-<p>
   This pattern would look for HTML elements in the
   <span class="inline-code">&lt;article&gt;</span> element and assign the title
   to <span class="inline-code">&#123;1&#125;</span>, the link to
@@ -148,6 +143,11 @@ p
   <span class="inline-code">&#123;3&#125;</span>. The assigned items are
   numbered in the order they are matched in the pattern, and the numbering is
   used for step 3.
+</p>
+
+<p>
+  Every website implements its HTML a bit differently, so getting the Item
+  Search Pattern correct is crucial!
 </p>
 
 <h2>Step 3. Define output format</h2>
@@ -200,11 +200,12 @@ p
   <br /><br />
   <strong>Note:</strong> The Edit URL follows a pattern:
   <span class="inline-code">/feeds/&lt;feed_id&gt;</span> where
-  <span class="inline-code">&lt;feed_id&gt;</span> is replaced by your actual
-  feed ID.
+  <span class="inline-code">&lt;feed_id&gt;</span> is replaced by the ID of the
+  feed to edit.
   <br />
   If you ever want to edit or delete your feed in the future, extract the
   <span class="inline-code">&lt;feed_id&gt;</span> from the feed URL (everything
-  preceding the <span class="inline-code">.xml</span> extension at the end).
+  preceding the <span class="inline-code">.xml</span> file extension at the
+  end).
 </p>
 {% endblock %}
