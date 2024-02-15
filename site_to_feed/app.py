@@ -319,6 +319,8 @@ def step_2():
         item_search_pattern
     )
 
+    title = get_page_title(html_source)
+
     # Create a unique id, which is required by ATOM.
     # Placing this here as an input for the step 3 form so only 1 feed
     # is generated if the user hits "Generate feed" to submit the form
@@ -326,9 +328,9 @@ def step_2():
     feed_id = str(uuid.uuid4()).replace('-', '')
 
     if htmx:
-        return render_template('step_3_define_output_format_htmx.html', extracted_html=extracted_html, global_search_pattern=global_search_pattern, item_search_pattern=item_search_pattern, feed_id=feed_id, url=url)
+        return render_template('step_3_define_output_format_htmx.html', extracted_html=extracted_html, global_search_pattern=global_search_pattern, item_search_pattern=item_search_pattern, feed_id=feed_id, title=title, url=url)
     else:
-        return render_template('step_3_define_output_format.html', extracted_html=extracted_html, global_search_pattern=global_search_pattern, item_search_pattern=item_search_pattern, feed_id=feed_id, html_source=html_source, url=url)
+        return render_template('step_3_define_output_format.html', extracted_html=extracted_html, global_search_pattern=global_search_pattern, item_search_pattern=item_search_pattern, feed_id=feed_id, title=title, html_source=html_source, url=url)
 
 
 @app.route('/format_feed_output', methods=['POST'])
@@ -464,10 +466,24 @@ def get_html(url: str):
         return '<p>Error: {error}</p>'
 
 
-def parse_html_via_patterns(html_source: str, global_search_pattern: str, item_search_pattern: str) -> dict[int, list]:
+def get_page_title(html_doc: str) -> str:
+    soup = BeautifulSoup(html_doc, 'html.parser')
+
+    title = soup.title
+    if title and title.string:
+        return title.string
+
+    header = soup.header
+    if header and header.h1 and header.h1.string:
+        return header.h1.string
+
+    return ''
+
+
+def parse_html_via_patterns(html_doc: str, global_search_pattern: str, item_search_pattern: str) -> dict[int, list]:
     translation_table = str.maketrans("", "", '{}*%"=<>/')
 
-    elements = BeautifulSoup(html_source, 'html.parser')
+    elements = BeautifulSoup(html_doc, 'html.parser')
 
     if global_search_pattern != "{%}":
         global_search_pattern = global_search_pattern.translate(
