@@ -19,7 +19,13 @@
   hx-trigger="submit"
 >
   <label for="feed-title">Feed Title:</label>
-  <input type="text" id="feed-title" name="feed-title" required />
+  <input
+    type="text"
+    id="feed-title"
+    name="feed-title"
+    value="{{ title or '' }}"
+    required
+  />
 
   <label for="feed-link">Feed Link:</label>
   <input
