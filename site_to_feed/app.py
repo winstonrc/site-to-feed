@@ -486,7 +486,7 @@ def get_page_title(html_doc: str) -> str:
 
     header = soup.header
     if header:
-        header_title = header.find(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'])
+        header_title = header.find(['h1', 'h2'])
         if header_title and header_title.text:
             return header_title.text
 
