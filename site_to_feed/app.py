@@ -13,6 +13,7 @@ from collections import namedtuple
 from feedgen.feed import FeedGenerator
 from flask import Flask, abort, make_response, redirect, render_template, request, send_from_directory, url_for
 from flask_htmx import HTMX
+from urllib.parse import urljoin, urlsplit
 
 
 app = Flask(__name__)
@@ -213,7 +214,8 @@ def edit_feed(feed_id):
     extracted_html = parse_html_via_patterns(
         html_source,
         config.global_search_pattern,
-        config.item_search_pattern
+        config.item_search_pattern,
+        config.feed_link
     )
 
     # Create the feed
@@ -316,7 +318,8 @@ def step_2():
     extracted_html = parse_html_via_patterns(
         html_source,
         global_search_pattern,
-        item_search_pattern
+        item_search_pattern,
+        url
     )
 
     title = get_page_title(html_source)
@@ -466,6 +469,14 @@ def get_html(url: str):
         return '<p>Error: {error}</p>'
 
 
+def is_absolute_url(url):
+    # Split the URL into components
+    url_components = urlsplit(url)
+
+    # Check if the scheme and netloc components are present (indicating an absolute URL)
+    return bool(url_components.scheme and url_components.netloc)
+
+
 def get_page_title(html_doc: str) -> str:
     soup = BeautifulSoup(html_doc, 'html.parser')
 
@@ -480,7 +491,7 @@ def get_page_title(html_doc: str) -> str:
     return ''
 
 
-def parse_html_via_patterns(html_doc: str, global_search_pattern: str, item_search_pattern: str) -> dict[int, list]:
+def parse_html_via_patterns(html_doc: str, global_search_pattern: str, item_search_pattern: str, base_url: str) -> dict[int, list]:
     translation_table = str.maketrans("", "", '{}*%"=<>/')
 
     elements = BeautifulSoup(html_doc, 'html.parser')
@@ -520,9 +531,14 @@ def parse_html_via_patterns(html_doc: str, global_search_pattern: str, item_sear
                         value = element.a.get_text(strip=True)
                     case 'href':
                         if element.find('a'):
-                            value = element.find('a').get(param)
+                            href = element.find('a').get(param)
                         else:
-                            value = element.get(param)
+                            href = element.get(param)
+
+                        if is_absolute_url(href):
+                            value = href
+                        else:
+                            value = urljoin(base_url, href)
                     case 'p':
                         value = element.p.get_text()
                     case _:
