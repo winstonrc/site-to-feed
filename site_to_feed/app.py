@@ -449,11 +449,11 @@ def step_3():
 
     url = request.form.get('url')
     if not url:
-        return f'<p>Error: URL from step 1 is required.</p>'
+        return '<p>Error: URL from step 1 is required.</p>'
 
     feed_id = request.form.get('feed-id')
     if not feed_id:
-        return f'<p>Error: feed_id from step 2 is required.</p>'
+        return '<p>Error: feed_id from step 2 is required.</p>'
 
     # Create the feed
     feed = generate_feed(
@@ -512,7 +512,7 @@ def step_3():
     else:
         html_source = request.form.get('html-source')
         if not html_source:
-            return f'<p>Error: HTML from step 1 is required.</p>'
+            return '<p>Error: HTML from step 1 is required.</p>'
 
         return render_template('step_4_get_rss_feed.html', feed=feed_preview, feed_id=feed_id, extracted_html=extracted_html, html_source=html_source, url=url)
 
@@ -534,7 +534,7 @@ def get_html(url: str):
         return '<p>Error: Invalid URL.</p>'
     except requests.exceptions.RequestException as error:
         logger.error(f"{error=}")
-        return f'<p>Error: {error}</p>'
+        return f"<p>Error: {error}</p>"
 
 
 def is_absolute_url(url):
