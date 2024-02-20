@@ -154,7 +154,8 @@ def view_feed(feed_id):
     extracted_html = parse_html_via_patterns(
         html_source,
         config.global_search_pattern,
-        config.item_search_pattern
+        config.item_search_pattern,
+        config.feed_link
     )
 
     # Convert the html into a list of named tuples
