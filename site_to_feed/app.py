@@ -10,14 +10,19 @@ import uuid
 
 from bs4 import BeautifulSoup
 from collections import namedtuple
+from dotenv import load_dotenv
 from feedgen.feed import FeedGenerator
 from flask import Flask, abort, make_response, redirect, render_template, request, send_from_directory, url_for
 from flask_htmx import HTMX
 from urllib.parse import urljoin, urlsplit
 
 
-app = Flask(__name__)
-htmx = HTMX(app)
+dotenv_path = os.path.join(os.path.dirname(__file__), "..", ".env")
+load_dotenv(dotenv_path=dotenv_path)
+
+LLM_API_KEY = os.getenv("LLM_API_KEY")
+LLM_API_URL = os.getenv("LLM_API_URL")
+LLM_BASE_QUERY = "Given the following html, please a dictionary containing the page title with the key 'page_title' (could be the first <h1> or <h2> element on the page), the opening html element representing a repeated pattern on the page with the key 'opening_element' (could be repeated <li> elements nested under a <ul> or <ol> element), the nested html containing that item's title (most likely the value between the nested <a> elements) with the key 'item_title', the nested html attribute containing the item's link (url) (most likely the 'href' attribute on the previous <a> element), and the nested html element representing the item's content (could be something like the value between <p> elements or <time> elements) with the key 'item_content'.\n\n"
 
 DATA_DIRECTORY = 'data/feeds/'
 os.makedirs(DATA_DIRECTORY, exist_ok=True)
@@ -30,6 +35,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 FeedEntry = namedtuple('FeedEntry', ['title', 'link', 'content'])
+
+app = Flask(__name__)
+htmx = HTMX(app)
 
 
 class FeedConfig:
@@ -292,10 +300,65 @@ def step_1():
 
     html_source = get_html(url)
 
-    if htmx:
-        return render_template('step_2_define_extraction_rules_htmx.html', html_source=html_source)
+    # Manual process
+    if 'get_html' in request.form:
+        if htmx:
+            return render_template('step_2_define_extraction_rules_htmx.html', html_source=html_source)
+        else:
+            return render_template('step_2_define_extraction_rules.html', html_source=html_source, url=url)
+    # LLM process
     else:
-        return render_template('step_2_define_extraction_rules.html', html_source=html_source, url=url)
+        if LLM_BASE_QUERY is None or LLM_API_URL is None or LLM_API_KEY is None:
+            return '<p>Error: Missing required environment variable for LLM query.</p>'
+
+        # Process data through the LLM
+        query = LLM_BASE_QUERY + html_source
+
+        data = {
+            'query': query
+        }
+
+        headers = {'Authorization': f'Bot {LLM_API_KEY}'}
+
+        try:
+            response = requests.post(LLM_API_URL, headers=headers, json=data)
+            response.raise_for_status()
+            logger.info(f"Request successful: {response.status_code}")
+        except requests.exceptions.HTTPError as error:
+            logger.error(f"{error=}")
+            return f"<p>Error: HTTP error occurred. {error}\nI'm feeling lucky is temporarily out of service. Please try using the manual 'Get HTML' process.</p>"
+        except requests.exceptions.ConnectionError as error:
+            logger.error(f"{error=}")
+            return "<p>Error: Invalid URL.\nI'm feeling lucky is temporarily out of service. Please try using the manual 'Get HTML' process.</p>"
+        except requests.exceptions.RequestException as error:
+            logger.error(f"{error=}")
+            return f"<p>Error: {error}\nI'm feeling lucky is temporarily out of service. Please try using the manual 'Get HTML' process.</p>"
+
+        response_json = response.json()
+        # logger.info(f"{response_json=}")
+        response_data = response_json['data']
+        response_error = response_json['error']
+        if not response_data or response_error:
+            error_code = response_error[0]['code']
+            error_msg = response_error[0]['msg']
+            logger.error(f"Error {error_code}: {error_msg}")
+            return f"<p>Error {error_code}: {error_msg}</p>"
+
+        response_data = response_json['data']
+        logger.info(f"{response_data=}")
+        response_output = response_data[0]['output']
+        logger.info(f"{response_output=}")
+
+        return str(response_output)
+
+        # if htmx:
+        #     return render_template('step_4_get_rss_feed_htmx.html', feed=feed_preview, feed_id=feed_id)
+        # else:
+        #     html_source = request.form.get('html-source')
+        #     if not html_source:
+        #         return f'<p>Error: HTML from step 1 is required.</p>'
+        #
+        #     return render_template('step_4_get_rss_feed.html', feed=feed_preview, feed_id=feed_id, extracted_html=extracted_html, html_source=html_source, url=url)
 
 
 @app.route('/extract_html', methods=['POST'])
@@ -458,16 +521,20 @@ def get_html(url: str):
     try:
         response = requests.get(url)
         response.raise_for_status()
+        logger.info(f"Request successful: {response.status_code}")
 
         html_source = response.content.decode('utf-8')
 
         return nh3.clean(html=html_source)
+    except requests.exceptions.HTTPError as error:
+        logger.error(f"{error=}")
+        return f'<p>Error: HTTP error occurred. {error}</p>'
     except requests.exceptions.ConnectionError as error:
         logger.error(f"{error=}")
         return '<p>Error: Invalid URL.</p>'
     except requests.exceptions.RequestException as error:
         logger.error(f"{error=}")
-        return '<p>Error: {error}</p>'
+        return f'<p>Error: {error}</p>'
 
 
 def is_absolute_url(url):
