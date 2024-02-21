@@ -1,6 +1,6 @@
 import ast
 import logging
-from bs4.element import DEFAULT_OUTPUT_ENCODING
+import json
 import nh3
 import os
 import re
@@ -10,18 +10,40 @@ import toml
 import uuid
 
 from bs4 import BeautifulSoup
+from bs4.element import DEFAULT_OUTPUT_ENCODING
 from collections import namedtuple
+from datetime import timedelta
+from dotenv import load_dotenv
 from feedgen.feed import FeedGenerator
 from flask import Flask, abort, make_response, redirect, render_template, request, send_from_directory, url_for
 from flask_htmx import HTMX
 from urllib.parse import urljoin, urlsplit
 
 
-app = Flask(__name__)
-htmx = HTMX(app)
+dotenv_path = os.path.join(os.path.dirname(__file__), "..", ".env")
+load_dotenv(dotenv_path=dotenv_path)
 
 DATA_DIRECTORY = '/data/feeds/'
+LLM_API_KEY = os.getenv("OPENAI_API_KEY")
+LLM_API_URL = os.getenv("OPENAI_API_URL")
+LLM_BASE_QUERY = """
+Given the provided HTML, please find the pattern for posts and return a single dictionary containing the following:
+- The page title with the key 'page_title'. This could be the first <h1> or <h2> element on the page.
+- The opening HTML element representing a repeated pattern on the page with the key 'opening_element'. This could be any repeated block of HTML within the <body> that represents a post such as <article> elements. If there aren't multiple <article> elements, it might instead be <li> elements nested under a <ul> or <ol> element.
+- The section of HTML that contains posts with the key 'global_search_pattern'. If the page has multiple <section> or <div> elements, and only one contains posts, use the single HTML element (e.g. <div>) for that section as the value. If there is no identifiable section of the page that contains posts or if what you identify matches the 'opening_element' value from above, use {%} as the value instead.
+- The nested HTML element containing that item's title with the key 'item_title'. The title might be between <a> elements meaning the desired element would be <a> for example.
+- The nested HTML attribute containing the item's link (url) with the key 'item_link'. This could be the 'href' attribute on the previous <a> element.
+- The nested HTML element representing the item's content with the key 'item_content'. This could be something like the value between <p> elements or <time> elements.
+Remove any class attributes. Your response should only contain the answers with no added words or explanations. If there are multiple nested values, then use the most inner element as the value (e.g. if the title is within <h2><a></a></h2>, then the element to return is <a> since it is the innermost HTML element).
+HTML:
+"""
+
+DATA_DIRECTORY = 'data'
+>>>>>> > main
 os.makedirs(DATA_DIRECTORY, exist_ok=True)
+
+FEEDS_DIRECTORY = f'{DATA_DIRECTORY}/feeds'
+os.makedirs(FEEDS_DIRECTORY, exist_ok=True)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -31,6 +53,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 FeedEntry = namedtuple('FeedEntry', ['title', 'link', 'content'])
+
+app = Flask(__name__)
+htmx = HTMX(app)
 
 session = requests_cache.CachedSession(
     'http_cache',
@@ -142,13 +167,13 @@ def documentation():
 
 @app.route('/feeds/<path:feed_id>.xml', methods=['GET'])
 def feed_file(feed_id):
-    return send_from_directory(DATA_DIRECTORY, f"{feed_id}.xml")
+    return send_from_directory(FEEDS_DIRECTORY, f"{feed_id}.xml")
 
 
 @app.route('/feeds/<path:feed_id>', methods=['GET'])
 def view_feed(feed_id):
-    feed_xml_filepath = f"{DATA_DIRECTORY}/{feed_id}.xml"
-    feed_toml_filepath = f"{DATA_DIRECTORY}/{feed_id}.toml"
+    feed_xml_filepath = f"{FEEDS_DIRECTORY}/{feed_id}.xml"
+    feed_toml_filepath = f"{FEEDS_DIRECTORY}/{feed_id}.toml"
 
     if not os.path.exists(feed_xml_filepath) or not os.path.exists(feed_toml_filepath):
         # If the files don't exist, issue a 404 error
@@ -193,8 +218,8 @@ def view_feed(feed_id):
 
 @app.route('/feeds/<path:feed_id>', methods=['POST'])
 def edit_feed(feed_id):
-    feed_xml_filepath = f"{DATA_DIRECTORY}/{feed_id}.xml"
-    feed_toml_filepath = f"{DATA_DIRECTORY}/{feed_id}.toml"
+    feed_xml_filepath = f"{FEEDS_DIRECTORY}/{feed_id}.xml"
+    feed_toml_filepath = f"{FEEDS_DIRECTORY}/{feed_id}.toml"
 
     if not os.path.exists(feed_xml_filepath) or not os.path.exists(feed_toml_filepath):
         # If the files don't exist, issue a 404 error
@@ -219,12 +244,16 @@ def edit_feed(feed_id):
 
     html_source = get_html(config.url)
 
-    extracted_html = parse_html_via_patterns(
-        html_source,
-        config.global_search_pattern,
-        config.item_search_pattern,
-        config.feed_link
-    )
+    try:
+        extracted_html = parse_html_via_patterns(
+            html_source,
+            config.global_search_pattern,
+            config.item_search_pattern,
+            config.feed_link
+        )
+    except Exception as error:
+        logger.error(f"{error=}")
+        return '<p>Error extracting HTML. Please try changing your item search pattern.</p>'
 
     # Create the feed
     feed = generate_feed(
@@ -266,8 +295,8 @@ def edit_feed(feed_id):
 
 @app.route('/feeds/<path:feed_id>/delete', methods=['POST', 'DELETE'])
 def delete_feed(feed_id):
-    feed_xml_filepath = f"{DATA_DIRECTORY}/{feed_id}.xml"
-    feed_toml_filepath = f"{DATA_DIRECTORY}/{feed_id}.toml"
+    feed_xml_filepath = f"{FEEDS_DIRECTORY}/{feed_id}.xml"
+    feed_toml_filepath = f"{FEEDS_DIRECTORY}/{feed_id}.toml"
 
     if os.path.exists(feed_xml_filepath) or os.path.exists(feed_toml_filepath):
         if os.path.exists(feed_xml_filepath):
@@ -299,10 +328,162 @@ def step_1():
 
     html_source = get_html(url)
 
-    if htmx:
-        return render_template('step_2_define_extraction_rules_htmx.html', html_source=html_source)
+    # Manual process
+    if 'get_html' in request.args:
+        if htmx:
+            return render_template('step_2_define_extraction_rules_htmx.html', html_source=html_source)
+        else:
+            return render_template('step_2_define_extraction_rules.html', html_source=html_source, url=url)
+    # LLM process
     else:
-        return render_template('step_2_define_extraction_rules.html', html_source=html_source, url=url)
+        if LLM_BASE_QUERY is None or LLM_API_URL is None or LLM_API_KEY is None:
+            return '<p>Error: Missing required environment variable for LLM query.</p>'
+
+        # Only send the first 50 lines of the HTML to the API since
+        # there are size limits, and the pattern should be contained.
+        partial_html_source_content = '\n'.join(html_source.splitlines()[:250])
+        logger.debug(partial_html_source_content)
+
+        # Post data to the LLM API
+        data = {
+            "model": "gpt-3.5-turbo",
+            "messages": [
+                {
+                    "role": "system",
+                    "content": LLM_BASE_QUERY
+                },
+                {
+                    "role": "user",
+                    "content": partial_html_source_content
+                }
+            ]
+        }
+
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {LLM_API_KEY}'
+        }
+
+        try:
+            response = session.post(LLM_API_URL, headers=headers, json=data)
+            response.raise_for_status()
+            logger.info(f"Request successful: {response.status_code}")
+        except requests.exceptions.HTTPError as error:
+            logger.error(f"{error=}.\n{error.response.text}")
+            return f"<p>{error}<br />I'm Feeling Lucky is temporarily out of service. Please try using the manual 'Get HTML' process.</p>"
+        except requests.exceptions.ConnectionError as error:
+            logger.error(f"{error=}")
+            return "<p>Error: Invalid URL.</p>"
+        except requests.exceptions.RequestException as error:
+            logger.error(f"{error=}")
+            return f"<p>{error}<br />I'm Feeling Lucky is temporarily out of service. Please try using the manual 'Get HTML' process.</p>"
+
+        response_data = response.json()
+        logger.debug(f"{response_data=}")
+
+        response_content_json = response_data.get(
+            'choices')[0].get('message').get('content')
+
+        if not response_content_json:
+            logger.error(f"Error unpacking response_data: {response_data=}")
+            return f"<p>Error: I'm Feeling Lucky is temporarily out of service. Please try using the manual 'Get HTML' process.</p>"
+
+        response_content = json.loads(response_content_json)
+        logger.info(f"{response_content=}")
+        page_title = response_content.get('page_title')
+        global_search_pattern = response_content.get(
+            'global_search_pattern', '{%}')
+        opening_element = response_content.get('opening_element')
+        item_title = response_content.get('item_title')
+        item_link = response_content.get('item_link')
+        item_content = response_content.get('item_content')
+
+        if not page_title or not opening_element or not item_title or not item_link or not item_content:
+            logger.error(
+                f"Error unpacking response_json: {response_content_json=}"
+            )
+            return f"<p>Error: I'm Feeling Lucky is temporarily out of service. Please try using the manual 'Get HTML' process.</p>"
+
+        item_search_pattern = f"{opening_element}\n{item_title}\n{item_link}\n{item_content}"
+        logger.debug(f"{item_search_pattern=}")
+
+        feed_id = str(uuid.uuid4()).replace('-', '')
+
+        retrieved_title = get_page_title(html_source)
+
+        if retrieved_title and retrieved_title != page_title:
+            feed_title = retrieved_title
+        else:
+            feed_title = page_title
+
+        feed_link = url
+        feed_description = "Custom feed generated by https://github.com/winstonrc/site-to-feed/"
+
+        # Create the feed
+        feed = generate_feed(
+            feed_id,
+            feed_title,
+            feed_link,
+            feed_description
+        )
+
+        try:
+            extracted_html = parse_html_via_patterns(
+                html_source,
+                global_search_pattern,
+                item_search_pattern,
+                url
+            )
+        except Exception as error:
+            logger.error(f"{error=}")
+            return '<p>Error extracting HTML. Please try creating a feed manually.</p>'
+
+        item_title_position = 1
+        item_link_position = 2
+        item_content_position = 3
+
+        # Convert the html into a list of named tuples
+        feed_entries = create_feed_entries_from_html(
+            extracted_html,
+            item_title_position,
+            item_link_position,
+            item_content_position
+        )
+
+        add_entries_to_feed(feed, feed_entries)
+
+        # Write the ATOM feed to a file
+        feed_filepath = f"{FEEDS_DIRECTORY}/{feed_id}"
+        feed.atom_file(f"{feed_filepath}.xml")
+
+        # Save values to a toml file to regenerate feed in the future
+        config = {
+            'url': url,
+            'global_search_pattern': global_search_pattern,
+            'item_search_pattern': item_search_pattern,
+            'feed_title': feed_title,
+            'feed_link': feed_link,
+            'feed_description': feed_description,
+            'item_title_position': item_title_position,
+            'item_link_position': item_link_position,
+            'item_content_position': item_content_position,
+            'feed_type': "atom"
+        }
+        with open(f"{feed_filepath}.toml", 'w') as file:
+            toml.dump(config, file)
+
+        # Create a dict to pass to the template to preview the feed
+        feed_preview = {
+            'title': feed_title,
+            'link': feed_link,
+            'subtitle': feed_description,
+            'entries': feed_entries
+        }
+
+        if htmx:
+            return render_template('step_4_get_rss_feed_htmx.html', feed=feed_preview, feed_id=feed_id)
+        else:
+            return render_template('im_feeling_lucky.html', feed=feed_preview, feed_id=feed_id)
 
 
 @app.route('/extract_html', methods=['POST'])
@@ -323,12 +504,16 @@ def step_2():
     if not url:
         return '<p>Error: URL from step 1 is required.</p>'
 
-    extracted_html = parse_html_via_patterns(
-        html_source,
-        global_search_pattern,
-        item_search_pattern,
-        url
-    )
+    try:
+        extracted_html = parse_html_via_patterns(
+            html_source,
+            global_search_pattern,
+            item_search_pattern,
+            url
+        )
+    except Exception as error:
+        logger.error(f"{error=}")
+        return '<p>Error extracting HTML. Please try changing your item search pattern.</p>'
 
     title = get_page_title(html_source)
 
@@ -417,7 +602,7 @@ def step_3():
 
     add_entries_to_feed(feed, feed_entries)
 
-    feed_filepath = f"{DATA_DIRECTORY}/{feed_id}"
+    feed_filepath = f"{FEEDS_DIRECTORY}/{feed_id}"
     if feed_type == 'atom':
         # Write the ATOM feed to a file
         feed.atom_file(f"{feed_filepath}.xml")
@@ -465,14 +650,17 @@ def get_html(url: str):
     try:
         response = session.get(url)
         response.raise_for_status()
+        logger.info(f"Request successful: {response.status_code}")
 
         html_source = response.content.decode('utf-8')
         sanitized_html = nh3.clean(html=html_source)
-
         soup = BeautifulSoup(sanitized_html, 'html.parser')
         pretty_html = soup.prettify()
 
         return pretty_html
+    except requests.exceptions.HTTPError as error:
+        logger.error(f"{error=}")
+        return f'<p>Error: HTTP error occurred. {error}</p>'
     except requests.exceptions.ConnectionError as error:
         logger.error(f"{error=}")
         return '<p>Error: Invalid URL.</p>'
@@ -542,9 +730,12 @@ def parse_html_via_patterns(html_doc: str, global_search_pattern: str, item_sear
             try:
                 match param:
                     case 'a':
-                        value = element.a.get_text(strip=True)
+                        if element.a:
+                            value = element.a.get_text(strip=True)
+                        else:
+                            value = element.get(param)
                     case 'href':
-                        if element.find('a'):
+                        if element.a:
                             href = element.find('a').get(param)
                         else:
                             href = element.get(param)
@@ -554,13 +745,17 @@ def parse_html_via_patterns(html_doc: str, global_search_pattern: str, item_sear
                         else:
                             value = urljoin(base_url, href)
                     case 'p':
-                        value = element.p.get_text()
+                        if element.p:
+                            value = element.p.get_text()
+                        else:
+                            value = element.get(param)
                     case _:
                         value = element.get(param)
                 logger.debug(f"{param=}; {value=}")
                 transformed_element.append(value)
             except Exception as error:
-                logger.error(f"{error=}")
+                logger.error(
+                    f"Error: Error parsing elements;\n{error=};\n{param=}")
                 abort(
                     500, '<p>Error: Error parsing elements. Please go back and check your query again.</p>')
             extracted_html[i] = transformed_element

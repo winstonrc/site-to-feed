@@ -1,0 +1,16 @@
+{% block content %}
+<br />
+
+{% include 'partials/feed_preview.html' %}
+
+<div id="step-2">
+  <h2>Step 2. Get your feed</h2>
+
+  <p>
+    <strong>Note:</strong> Don't lose this! It will be the only time you are
+    provided this URL.
+  </p>
+
+  {% include 'partials/feed_links.html' %}
+</div>
+{% endblock %}

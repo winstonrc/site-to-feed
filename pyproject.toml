@@ -19,6 +19,7 @@ flask-htmx = "^0.3.2"
 feedgen = "^1.0.0"
 toml = "^0.10.2"
 requests-cache = "^1.2.0"
+python-dotenv = "^1.0.1"
 gunicorn = "^21.2.0"
 
 [tool.pyright]

@@ -1,3 +1,12 @@
+<details>
+  <summary>Instructions</summary>
+  <p>
+    Use the <span class="inline-code">Get HTML</span> button to manually create
+    a feed or try the <span class="inline-code">I'm Feeling Lucky</span> button,
+    which uses an LLM to attempt to create a feed. Results may vary.
+  </p>
+</details>
+
 <form
   id="get-html"
   action="/get_html_source"
@@ -20,5 +29,6 @@
     required
     autocomplete="off"
   /><br />
-  <button type="submit">Get HTML</button>
+  <button type="submit" name="get_html">Get HTML</button>
+  <button type="submit" name="feeling_lucky">I'm Feeling Lucky</button>
 </form>
