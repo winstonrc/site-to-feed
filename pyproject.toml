@@ -18,8 +18,8 @@ beautifulsoup4 = "^4.12.3"
 flask-htmx = "^0.3.2"
 feedgen = "^1.0.0"
 toml = "^0.10.2"
-python-dotenv = "^1.0.1"
 requests-cache = "^1.2.0"
+python-dotenv = "^1.0.1"
 
 [tool.pyright]
 venvPath = "."

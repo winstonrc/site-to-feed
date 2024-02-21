@@ -1,6 +1,6 @@
 import ast
 import logging
-from bs4.element import DEFAULT_OUTPUT_ENCODING
+import json
 import nh3
 import os
 import re
@@ -10,6 +10,7 @@ import toml
 import uuid
 
 from bs4 import BeautifulSoup
+from bs4.element import DEFAULT_OUTPUT_ENCODING
 from collections import namedtuple
 from datetime import timedelta
 from dotenv import load_dotenv
@@ -24,7 +25,16 @@ load_dotenv(dotenv_path=dotenv_path)
 
 LLM_API_KEY = os.getenv("OPENAI_API_KEY")
 LLM_API_URL = os.getenv("OPENAI_API_URL")
-LLM_BASE_QUERY = "Given the following html, please find the pattern for posts and return a single dictionary containing the page title with the key 'page_title' (could be the first <h1> or <h2> element on the page), the opening html element representing a repeated pattern on the page with the key 'opening_element' (could be anything repeated such as <article> or <li> elements nested under a <ul> or <ol> element), the nested html element containing that item's title (the title might be between <a> elements meaning the desired element would be <a> for example) with the key 'item_title', the nested html attribute containing the item's link (url) (most likely the 'href' attribute on the previous <a> element), and the nested html element representing the item's content (could be something like the value between <p> elements or <time> elements) with the key 'item_content'. Remove any class attributes. Your response should only contain the answers with no added words or explanations. If there are multiple nested values (e.g. the title is within <h2><a></a></h2>), then use the most inner element as the value. HTML:"
+LLM_BASE_QUERY = """
+Given the provided HTML, please find the pattern for posts and return a single dictionary containing the following:
+- The page title with the key 'page_title'. This could be the first <h1> or <h2> element on the page.
+- The opening HTML element representing a repeated pattern on the page with the key 'opening_element'. This could be any repeated block of HTML within the <body> such as <article> elements or <li> elements nested under a <ul> or <ol> element.
+- The nested HTML element containing that item's title with the key 'item_title'. The title might be between <a> elements meaning the desired element would be <a> for example.
+- The nested HTML attribute containing the item's link (url) with the key 'item_link'. This could be the 'href' attribute on the previous <a> element.
+- The nested HTML element representing the item's content with the key 'item_content'. This could be something like the value between <p> elements or <time> elements.
+Remove any class attributes. Your response should only contain the answers with no added words or explanations. If there are multiple nested values, then use the most inner element as the value (e.g. if the title is within <h2><a></a></h2>, then the element to return is <a> since it is the innermost HTML element).
+HTML:
+"""
 
 DATA_DIRECTORY = 'data'
 os.makedirs(DATA_DIRECTORY, exist_ok=True)
@@ -322,8 +332,12 @@ def step_1():
         if LLM_BASE_QUERY is None or LLM_API_URL is None or LLM_API_KEY is None:
             return '<p>Error: Missing required environment variable for LLM query.</p>'
 
-        # Post data to the LLM API
+        # Only send the first 50 lines of the HTML to the API since
+        # there are size limits, and the pattern should be contained.
+        html_source_content = '\n'.join(html_source.splitlines()[:50])
+        logger.info(html_source_content)
 
+        # Post data to the LLM API
         data = {
             "model": "gpt-3.5-turbo",
             "messages": [
@@ -333,7 +347,7 @@ def step_1():
                 },
                 {
                     "role": "user",
-                    "content": body
+                    "content": html_source_content
                 }
             ]
         }
@@ -360,14 +374,15 @@ def step_1():
         response_data = response.json()
         logger.debug(f"{response_data=}")
 
-        response_content = response_data.get(
-            'choices')[0].get('message').get(['content'])
+        response_content_json = response_data.get(
+            'choices')[0].get('message').get('content')
 
-        if not response_content:
+        if not response_content_json:
             logger.error(f"Error unpacking response_data: {response_data=}")
             return f"<p>Error: I'm Feeling Lucky is temporarily out of service. Please try using the manual 'Get HTML' process.</p>"
 
-        return str(response_content)
+        response_content = json.loads(response_content_json)
+        return f"<p>{response_content}</p>"
 
         # if htmx:
         #     return render_template('step_4_get_rss_feed_htmx.html', feed=feed_preview, feed_id=feed_id)
@@ -542,8 +557,11 @@ def get_html(url: str):
         logger.info(f"Request successful: {response.status_code}")
 
         html_source = response.content.decode('utf-8')
+        sanitized_html = nh3.clean(html=html_source)
+        soup = BeautifulSoup(sanitized_html, 'html.parser')
+        pretty_html = soup.prettify()
 
-        return nh3.clean(html=html_source)
+        return pretty_html
     except requests.exceptions.HTTPError as error:
         logger.error(f"{error=}")
         return f'<p>Error: HTTP error occurred. {error}</p>'
@@ -568,13 +586,13 @@ def get_page_title(html_doc: str) -> str:
 
     title = soup.title
     if title and title.string:
-        return title.string
+        return title.string.strip()
 
     header = soup.header
     if header:
         header_title = header.find(['h1', 'h2'])
         if header_title and header_title.text:
-            return header_title.text
+            return header_title.text.strip()
 
     return ''
 
