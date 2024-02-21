@@ -460,8 +460,12 @@ def get_html(url: str):
         response.raise_for_status()
 
         html_source = response.content.decode('utf-8')
+        sanitized_html = nh3.clean(html=html_source)
 
-        return nh3.clean(html=html_source)
+        soup = BeautifulSoup(sanitized_html, 'html.parser')
+        pretty_html = soup.prettify()
+
+        return pretty_html
     except requests.exceptions.ConnectionError as error:
         logger.error(f"{error=}")
         return '<p>Error: Invalid URL.</p>'
@@ -483,13 +487,13 @@ def get_page_title(html_doc: str) -> str:
 
     title = soup.title
     if title and title.string:
-        return title.string
+        return title.string.strip()
 
     header = soup.header
     if header:
         header_title = header.find(['h1', 'h2'])
         if header_title and header_title.text:
-            return header_title.text
+            return header_title.text.strip()
 
     return ''
 
