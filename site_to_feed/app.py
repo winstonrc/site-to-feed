@@ -28,7 +28,7 @@ LLM_API_URL = os.getenv("OPENAI_API_URL")
 LLM_BASE_QUERY = """
 Given the provided HTML, please find the pattern for posts and return a single dictionary containing the following:
 - The page title with the key 'page_title'. This could be the first <h1> or <h2> element on the page.
-- The opening HTML element representing a repeated pattern on the page with the key 'opening_element'. This could be any repeated block of HTML within the <body> such as <article> elements or <li> elements nested under a <ul> or <ol> element.
+- The opening HTML element representing a repeated pattern on the page with the key 'opening_element'. This could be any repeated block of HTML within the <body> that represents a post such as <article> elements. If there aren't multiple <article> elements, it might instead be <li> elements nested under a <ul> or <ol> element.
 - The nested HTML element containing that item's title with the key 'item_title'. The title might be between <a> elements meaning the desired element would be <a> for example.
 - The nested HTML attribute containing the item's link (url) with the key 'item_link'. This could be the 'href' attribute on the previous <a> element.
 - The nested HTML element representing the item's content with the key 'item_content'. This could be something like the value between <p> elements or <time> elements.
@@ -334,8 +334,8 @@ def step_1():
 
         # Only send the first 50 lines of the HTML to the API since
         # there are size limits, and the pattern should be contained.
-        html_source_content = '\n'.join(html_source.splitlines()[:50])
-        logger.info(html_source_content)
+        partial_html_source_content = '\n'.join(html_source.splitlines()[:250])
+        logger.debug(partial_html_source_content)
 
         # Post data to the LLM API
         data = {
@@ -347,7 +347,7 @@ def step_1():
                 },
                 {
                     "role": "user",
-                    "content": html_source_content
+                    "content": partial_html_source_content
                 }
             ]
         }
