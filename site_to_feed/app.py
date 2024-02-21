@@ -5,11 +5,13 @@ import nh3
 import os
 import re
 import requests
+import requests_cache
 import toml
 import uuid
 
 from bs4 import BeautifulSoup
 from collections import namedtuple
+from datetime import timedelta
 from dotenv import load_dotenv
 from feedgen.feed import FeedGenerator
 from flask import Flask, abort, make_response, redirect, render_template, request, send_from_directory, url_for
@@ -20,12 +22,15 @@ from urllib.parse import urljoin, urlsplit
 dotenv_path = os.path.join(os.path.dirname(__file__), "..", ".env")
 load_dotenv(dotenv_path=dotenv_path)
 
-LLM_API_KEY = os.getenv("LLM_API_KEY")
-LLM_API_URL = os.getenv("LLM_API_URL")
-LLM_BASE_QUERY = "Given the following html, please a dictionary containing the page title with the key 'page_title' (could be the first <h1> or <h2> element on the page), the opening html element representing a repeated pattern on the page with the key 'opening_element' (could be repeated <li> elements nested under a <ul> or <ol> element), the nested html containing that item's title (most likely the value between the nested <a> elements) with the key 'item_title', the nested html attribute containing the item's link (url) (most likely the 'href' attribute on the previous <a> element), and the nested html element representing the item's content (could be something like the value between <p> elements or <time> elements) with the key 'item_content'.\n\n"
+LLM_API_KEY = os.getenv("OPENAI_API_KEY")
+LLM_API_URL = os.getenv("OPENAI_API_URL")
+LLM_BASE_QUERY = "Given the following html, please find the pattern for posts and return a single dictionary containing the page title with the key 'page_title' (could be the first <h1> or <h2> element on the page), the opening html element representing a repeated pattern on the page with the key 'opening_element' (could be anything repeated such as <article> or <li> elements nested under a <ul> or <ol> element), the nested html element containing that item's title (the title might be between <a> elements meaning the desired element would be <a> for example) with the key 'item_title', the nested html attribute containing the item's link (url) (most likely the 'href' attribute on the previous <a> element), and the nested html element representing the item's content (could be something like the value between <p> elements or <time> elements) with the key 'item_content'. Remove any class attributes. Your response should only contain the answers with no added words or explanations. If there are multiple nested values (e.g. the title is within <h2><a></a></h2>), then use the most inner element as the value. HTML:"
 
-DATA_DIRECTORY = 'data/feeds/'
+DATA_DIRECTORY = 'data'
 os.makedirs(DATA_DIRECTORY, exist_ok=True)
+
+FEEDS_DIRECTORY = f'{DATA_DIRECTORY}/feeds'
+os.makedirs(FEEDS_DIRECTORY, exist_ok=True)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -38,6 +43,12 @@ FeedEntry = namedtuple('FeedEntry', ['title', 'link', 'content'])
 
 app = Flask(__name__)
 htmx = HTMX(app)
+
+session = requests_cache.CachedSession(
+    'http_cache',
+    backend='sqlite',
+    use_temp=True
+)
 
 
 class FeedConfig:
@@ -143,13 +154,13 @@ def documentation():
 
 @app.route('/feeds/<path:feed_id>.xml', methods=['GET'])
 def feed_file(feed_id):
-    return send_from_directory(DATA_DIRECTORY, f"{feed_id}.xml")
+    return send_from_directory(FEEDS_DIRECTORY, f"{feed_id}.xml")
 
 
 @app.route('/feeds/<path:feed_id>', methods=['GET'])
 def view_feed(feed_id):
-    feed_xml_filepath = f"{DATA_DIRECTORY}/{feed_id}.xml"
-    feed_toml_filepath = f"{DATA_DIRECTORY}/{feed_id}.toml"
+    feed_xml_filepath = f"{FEEDS_DIRECTORY}/{feed_id}.xml"
+    feed_toml_filepath = f"{FEEDS_DIRECTORY}/{feed_id}.toml"
 
     if not os.path.exists(feed_xml_filepath) or not os.path.exists(feed_toml_filepath):
         # If the files don't exist, issue a 404 error
@@ -194,8 +205,8 @@ def view_feed(feed_id):
 
 @app.route('/feeds/<path:feed_id>', methods=['POST'])
 def edit_feed(feed_id):
-    feed_xml_filepath = f"{DATA_DIRECTORY}/{feed_id}.xml"
-    feed_toml_filepath = f"{DATA_DIRECTORY}/{feed_id}.toml"
+    feed_xml_filepath = f"{FEEDS_DIRECTORY}/{feed_id}.xml"
+    feed_toml_filepath = f"{FEEDS_DIRECTORY}/{feed_id}.toml"
 
     if not os.path.exists(feed_xml_filepath) or not os.path.exists(feed_toml_filepath):
         # If the files don't exist, issue a 404 error
@@ -267,8 +278,8 @@ def edit_feed(feed_id):
 
 @app.route('/feeds/<path:feed_id>/delete', methods=['POST', 'DELETE'])
 def delete_feed(feed_id):
-    feed_xml_filepath = f"{DATA_DIRECTORY}/{feed_id}.xml"
-    feed_toml_filepath = f"{DATA_DIRECTORY}/{feed_id}.toml"
+    feed_xml_filepath = f"{FEEDS_DIRECTORY}/{feed_id}.xml"
+    feed_toml_filepath = f"{FEEDS_DIRECTORY}/{feed_id}.toml"
 
     if os.path.exists(feed_xml_filepath) or os.path.exists(feed_toml_filepath):
         if os.path.exists(feed_xml_filepath):
@@ -301,7 +312,7 @@ def step_1():
     html_source = get_html(url)
 
     # Manual process
-    if 'get_html' in request.form:
+    if 'get_html' in request.args:
         if htmx:
             return render_template('step_2_define_extraction_rules_htmx.html', html_source=html_source)
         else:
@@ -311,45 +322,52 @@ def step_1():
         if LLM_BASE_QUERY is None or LLM_API_URL is None or LLM_API_KEY is None:
             return '<p>Error: Missing required environment variable for LLM query.</p>'
 
-        # Process data through the LLM
-        query = LLM_BASE_QUERY + html_source
+        # Post data to the LLM API
 
         data = {
-            'query': query
+            "model": "gpt-3.5-turbo",
+            "messages": [
+                {
+                    "role": "system",
+                    "content": LLM_BASE_QUERY
+                },
+                {
+                    "role": "user",
+                    "content": body
+                }
+            ]
         }
 
-        headers = {'Authorization': f'Bot {LLM_API_KEY}'}
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {LLM_API_KEY}'
+        }
 
         try:
-            response = requests.post(LLM_API_URL, headers=headers, json=data)
+            response = session.post(LLM_API_URL, headers=headers, json=data)
             response.raise_for_status()
             logger.info(f"Request successful: {response.status_code}")
         except requests.exceptions.HTTPError as error:
-            logger.error(f"{error=}")
-            return f"<p>Error: HTTP error occurred. {error}\nI'm feeling lucky is temporarily out of service. Please try using the manual 'Get HTML' process.</p>"
+            logger.error(f"{error=}.\n{error.response.text}")
+            return f"<p>{error}<br />I'm Feeling Lucky is temporarily out of service. Please try using the manual 'Get HTML' process.</p>"
         except requests.exceptions.ConnectionError as error:
             logger.error(f"{error=}")
-            return "<p>Error: Invalid URL.\nI'm feeling lucky is temporarily out of service. Please try using the manual 'Get HTML' process.</p>"
+            return "<p>Error: Invalid URL.</p>"
         except requests.exceptions.RequestException as error:
             logger.error(f"{error=}")
-            return f"<p>Error: {error}\nI'm feeling lucky is temporarily out of service. Please try using the manual 'Get HTML' process.</p>"
+            return f"<p>{error}<br />I'm Feeling Lucky is temporarily out of service. Please try using the manual 'Get HTML' process.</p>"
 
-        response_json = response.json()
-        # logger.info(f"{response_json=}")
-        response_data = response_json['data']
-        response_error = response_json['error']
-        if not response_data or response_error:
-            error_code = response_error[0]['code']
-            error_msg = response_error[0]['msg']
-            logger.error(f"Error {error_code}: {error_msg}")
-            return f"<p>Error {error_code}: {error_msg}</p>"
+        response_data = response.json()
+        logger.debug(f"{response_data=}")
 
-        response_data = response_json['data']
-        logger.info(f"{response_data=}")
-        response_output = response_data[0]['output']
-        logger.info(f"{response_output=}")
+        response_content = response_data.get(
+            'choices')[0].get('message').get(['content'])
 
-        return str(response_output)
+        if not response_content:
+            logger.error(f"Error unpacking response_data: {response_data=}")
+            return f"<p>Error: I'm Feeling Lucky is temporarily out of service. Please try using the manual 'Get HTML' process.</p>"
+
+        return str(response_content)
 
         # if htmx:
         #     return render_template('step_4_get_rss_feed_htmx.html', feed=feed_preview, feed_id=feed_id)
@@ -473,7 +491,7 @@ def step_3():
 
     add_entries_to_feed(feed, feed_entries)
 
-    feed_filepath = f"{DATA_DIRECTORY}/{feed_id}"
+    feed_filepath = f"{FEEDS_DIRECTORY}/{feed_id}"
     if feed_type == 'atom':
         # Write the ATOM feed to a file
         feed.atom_file(f"{feed_filepath}.xml")
@@ -519,7 +537,7 @@ def step_3():
 
 def get_html(url: str):
     try:
-        response = requests.get(url)
+        response = session.get(url)
         response.raise_for_status()
         logger.info(f"Request successful: {response.status_code}")
 
