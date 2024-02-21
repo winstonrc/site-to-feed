@@ -5,6 +5,7 @@ import nh3
 import os
 import re
 import requests
+import requests_cache
 import toml
 import uuid
 
@@ -30,6 +31,12 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 FeedEntry = namedtuple('FeedEntry', ['title', 'link', 'content'])
+
+session = requests_cache.CachedSession(
+    'http_cache',
+    backend='sqlite',
+    use_temp=True
+)
 
 
 class FeedConfig:
@@ -456,7 +463,7 @@ def step_3():
 
 def get_html(url: str):
     try:
-        response = requests.get(url)
+        response = session.get(url)
         response.raise_for_status()
 
         html_source = response.content.decode('utf-8')
