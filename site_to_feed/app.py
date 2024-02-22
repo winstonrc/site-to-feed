@@ -28,8 +28,7 @@ LLM_API_KEY = os.getenv("OPENAI_API_KEY")
 LLM_API_URL = os.getenv("OPENAI_API_URL")
 LLM_BASE_QUERY = os.getenv("LLM_BASE_QUERY")
 
-DATA_DIRECTORY = 'data'
->>>>>> > main
+DATA_DIRECTORY = '/data'
 os.makedirs(DATA_DIRECTORY, exist_ok=True)
 
 FEEDS_DIRECTORY = f'{DATA_DIRECTORY}/feeds'
