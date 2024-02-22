@@ -27,10 +27,8 @@ DATA_DIRECTORY = '/data/feeds/'
 LLM_API_KEY = os.getenv("OPENAI_API_KEY")
 LLM_API_URL = os.getenv("OPENAI_API_URL")
 LLM_BASE_QUERY = os.getenv("LLM_BASE_QUERY")
-
-DATA_DIRECTORY = '/data'
-os.makedirs(DATA_DIRECTORY, exist_ok=True)
-
+TMP_DIRECTORY = os.getenv("TMP_DIRECTORY")
+DATA_DIRECTORY = os.getenv("DATA_DIRECTORY")
 FEEDS_DIRECTORY = f'{DATA_DIRECTORY}/feeds'
 os.makedirs(FEEDS_DIRECTORY, exist_ok=True)
 
@@ -47,9 +45,8 @@ app = Flask(__name__)
 htmx = HTMX(app)
 
 session = requests_cache.CachedSession(
-    'http_cache',
-    backend='sqlite',
-    use_temp=True
+    f"{TMP_DIRECTORY}/http_cache",
+    backend='sqlite'
 )
 
 
