@@ -26,7 +26,6 @@ load_dotenv(dotenv_path=dotenv_path)
 LLM_API_KEY = os.getenv("OPENAI_API_KEY")
 LLM_API_URL = os.getenv("OPENAI_API_URL")
 LLM_BASE_QUERY = os.getenv("LLM_BASE_QUERY")
-REQUESTS_CACHE_DIRECTORY = os.getenv("REQUESTS_CACHE_DIRECTORY")
 DATA_DIRECTORY = os.getenv("DATA_DIRECTORY")
 FEEDS_DIRECTORY = f'{DATA_DIRECTORY}/feeds'
 os.makedirs(FEEDS_DIRECTORY, exist_ok=True)
@@ -44,8 +43,9 @@ app = Flask(__name__)
 htmx = HTMX(app)
 
 session = requests_cache.CachedSession(
-    f"{REQUESTS_CACHE_DIRECTORY}/http_cache",
-    backend='sqlite'
+    'http_cache',
+    backend='sqlite',
+    use_temp=True
 )
 
 
