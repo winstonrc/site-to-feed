@@ -384,7 +384,7 @@ def step_1():
         logger.info(f"{response_content=}")
         page_title = response_content.get('page_title')
         global_search_pattern = response_content.get(
-            'global_search_pattern', '{%}')
+            'global_search_pattern', '*')
         opening_element = response_content.get('opening_element')
         item_title = response_content.get('item_title')
         item_link = response_content.get('item_link')
@@ -705,7 +705,7 @@ def parse_html_via_patterns(html_doc: str, global_search_pattern: str, item_sear
 
     elements = BeautifulSoup(html_doc, 'html.parser')
 
-    if global_search_pattern != "{%}":
+    if global_search_pattern != "*":
         global_search_pattern = global_search_pattern.translate(
             translation_table)
         elements = elements.find(global_search_pattern)
