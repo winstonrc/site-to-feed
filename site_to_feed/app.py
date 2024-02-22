@@ -481,7 +481,7 @@ def step_1():
         }
 
         if htmx:
-            return render_template('step_4_get_rss_feed_htmx.html', feed=feed_preview, feed_id=feed_id)
+            return render_template('im_feeling_lucky_htmx.html', feed=feed_preview, feed_id=feed_id)
         else:
             return render_template('im_feeling_lucky.html', feed=feed_preview, feed_id=feed_id)
 
