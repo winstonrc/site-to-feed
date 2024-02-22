@@ -258,14 +258,21 @@ def edit_feed(feed_id):
 
     add_entries_to_feed(feed, feed_entries)
 
-    if config.feed_type == 'atom':
-        # Write the ATOM feed to a file
-        feed.atom_file(feed_xml_filepath)
-    elif config.feed_type == 'rss':
-        # Write the RSS feed to a file
-        feed.rss_file(feed_xml_filepath)
-    else:
-        return '<p>Error: Feed type is required.</p>'
+    try:
+        if config.feed_type == 'atom':
+            # Write the ATOM feed to a file
+            feed.atom_file(feed_xml_filepath)
+        elif config.feed_type == 'rss':
+            # Write the RSS feed to a file
+            feed.rss_file(feed_xml_filepath)
+        else:
+            return '<p>Error: Feed type is required.</p>'
+    except ValueError as error:
+        logger.error(f"{error=}")
+        return '<p>Error: Feed title is required.</p>'
+    except Exception as error:
+        logger.error(f"{error=}")
+        return '<p>Error: Unable to create feed.</p>'
 
     # Create a dict to pass to the template to preview the feed
     feed_preview = {
@@ -387,7 +394,7 @@ def step_1():
             logger.error(
                 f"Error unpacking response_json: {response_content_json=}"
             )
-            return f"<p>Error: I'm Feeling Lucky is temporarily out of service. Please try using the manual 'Get HTML' process.</p>"
+            return "<p>Error: I'm Feeling Lucky is temporarily out of service. Please try using the manual 'Get HTML' process.</p>"
 
         item_search_pattern = f"{opening_element}\n{item_title}\n{item_link}\n{item_content}"
         logger.debug(f"{item_search_pattern=}")
@@ -421,7 +428,7 @@ def step_1():
             )
         except Exception as error:
             logger.error(f"{error=}")
-            return '<p>Error extracting HTML. Please try creating a feed manually.</p>'
+            return "<p>Error: I'm Feeling Lucky is temporarily out of service. Please try using the manual 'Get HTML' process.</p>"
 
         item_title_position = 1
         item_link_position = 2
@@ -437,9 +444,17 @@ def step_1():
 
         add_entries_to_feed(feed, feed_entries)
 
-        # Write the ATOM feed to a file
-        feed_filepath = f"{FEEDS_DIRECTORY}/{feed_id}"
-        feed.atom_file(f"{feed_filepath}.xml")
+        try:
+            # Write the ATOM feed to a file
+            feed_filepath = f"{FEEDS_DIRECTORY}/{feed_id}"
+            feed.atom_file(f"{feed_filepath}.xml")
+        except ValueError as error:
+            logger.error(
+                f"{error=}; This is most likely due to a missing title for a feed entry resulting from difficulty parsing the HTML correctly.")
+            return "<p>Error: I'm Feeling Lucky is temporarily out of service. Please try using the manual 'Get HTML' process.</p>"
+        except Exception as error:
+            logger.error(f"{error=}")
+            return "<p>Error: I'm Feeling Lucky is temporarily out of service. Please try using the manual 'Get HTML' process.</p>"
 
         # Save values to a toml file to regenerate feed in the future
         config = {
@@ -588,14 +603,21 @@ def step_3():
     add_entries_to_feed(feed, feed_entries)
 
     feed_filepath = f"{FEEDS_DIRECTORY}/{feed_id}"
-    if feed_type == 'atom':
-        # Write the ATOM feed to a file
-        feed.atom_file(f"{feed_filepath}.xml")
-    elif feed_type == 'rss':
-        # Write the RSS feed to a file
-        feed.rss_file(f"{feed_filepath}.xml")
-    else:
-        return '<p>Error: Feed type is required.</p>'
+    try:
+        if feed_type == 'atom':
+            # Write the ATOM feed to a file
+            feed.atom_file(f"{feed_filepath}.xml")
+        elif feed_type == 'rss':
+            # Write the RSS feed to a file
+            feed.rss_file(f"{feed_filepath}.xml")
+        else:
+            return '<p>Error: Feed type is required.</p>'
+    except ValueError as error:
+        logger.error(f"{error=}")
+        return '<p>Error: Feed title is required.</p>'
+    except Exception as error:
+        logger.error(f"{error=}")
+        return '<p>Error: Unable to create feed.</p>'
 
     # Save values to a toml file to regenerate feed in the future
     config = {
