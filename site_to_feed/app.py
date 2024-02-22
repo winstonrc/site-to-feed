@@ -26,17 +26,7 @@ load_dotenv(dotenv_path=dotenv_path)
 DATA_DIRECTORY = '/data/feeds/'
 LLM_API_KEY = os.getenv("OPENAI_API_KEY")
 LLM_API_URL = os.getenv("OPENAI_API_URL")
-LLM_BASE_QUERY = """
-Given the provided HTML, please find the pattern for posts and return a single dictionary containing the following:
-- The page title with the key 'page_title'. This could be the first <h1> or <h2> element on the page.
-- The opening HTML element representing a repeated pattern on the page with the key 'opening_element'. This could be any repeated block of HTML within the <body> that represents a post such as <article> elements. If there aren't multiple <article> elements, it might instead be <li> elements nested under a <ul> or <ol> element.
-- The section of HTML that contains posts with the key 'global_search_pattern'. If the page has multiple <section> or <div> elements, and only one contains posts, use the single HTML element (e.g. <div>) for that section as the value. If there is no identifiable section of the page that contains posts or if what you identify matches the 'opening_element' value from above, use {%} as the value instead.
-- The nested HTML element containing that item's title with the key 'item_title'. The title might be between <a> elements meaning the desired element would be <a> for example.
-- The nested HTML attribute containing the item's link (url) with the key 'item_link'. This could be the 'href' attribute on the previous <a> element.
-- The nested HTML element representing the item's content with the key 'item_content'. This could be something like the value between <p> elements or <time> elements.
-Remove any class attributes. Your response should only contain the answers with no added words or explanations. If there are multiple nested values, then use the most inner element as the value (e.g. if the title is within <h2><a></a></h2>, then the element to return is <a> since it is the innermost HTML element).
-HTML:
-"""
+LLM_BASE_QUERY = os.getenv("LLM_BASE_QUERY")
 
 DATA_DIRECTORY = 'data'
 >>>>>> > main
