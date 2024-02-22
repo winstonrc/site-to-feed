@@ -12,7 +12,6 @@ primary_region = 'dfw'
 [env]
   PORT = '8080'
   DATA_DIRECTORY="/data"
-  REQUESTS_CACHE_DIRECTORY="/data/http_cache"
   LLM_BASE_QUERY = """
     Given the provided HTML, please find the pattern for posts and return a single dictionary containing the following:
     - The page title with the key 'page_title'. This could be the first <h1> or <h2> element on the page.
